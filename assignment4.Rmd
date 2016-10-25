@@ -16,7 +16,9 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.table("Assistments-confidence.csv", sep = ",", header = TRUE)
+
+D1 <- dplyr::select(D1, 2:8)
 
   #We won't need to id variable, so remove that.
 
@@ -40,11 +42,11 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 
 #Study your correlogram image and save it, you will need it later
 ```
-
+image: ![](Correlation1.jpeg)
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <-  dplyr::select(D1, 1:3, 5:7)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -73,8 +75,9 @@ summary(pca)
 
 plot(pca, type = "lines")
 ```
-
+image: ![](pca.jpeg)
 #Think about which components you would drop and make a decision
+I would keep the upper left 2 components and drop the others because the combination of upper left 2 components explain the majority of variences. 
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
@@ -87,8 +90,11 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
-
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
   
 ```
-
+image: ![](Correlation2.jpeg)
