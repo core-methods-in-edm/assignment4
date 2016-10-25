@@ -16,20 +16,23 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
-D1 <- 
+#Set working directory
+setwd("~/Documents/EDM2016/assignment4")
 
-  #We won't need to id variable, so remove that.
+D1 <- read.csv("Assistments-confidence.csv", sep = ",", header = T)
 
-
+#We won't need the id variable, so remove that.
+D1 <- D1[,-1]
 ```
 
 #Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
 library(corrplot)
-
+library(dplyr)
+library(tidyr)
+library(lattice)
 #Generate pairwise correlations
 COR <- cor(D1)
 
@@ -39,12 +42,13 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
         sig.level=0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
+#[Observation] From the correlogram, mean_hint has strong correlations with the others. It is negatively correlated to mean_correct with a value of -50, negatively correlated to prior_percent_correct with a value of -20, positively correlated to mean_attempt, problems_attempted, and prior_prob_count with a positive correlation and values of 36, 28, and 20. 
 ```
 
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- select(D1, -mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -53,7 +57,9 @@ D2 <- scale(D2, center = TRUE)
 #Now run the PCA on the new data frame
 
 ```{r}
+## notes: PCA is a linear orthogonal transformation that transform data into a new coordinate system such that the first coordinate (PC 1) explains the largest variability [Q]: Is it safe to say that each principle component is a linear combination of the variables?##
 pca <- prcomp(D2, scale = TRUE)
+ls(pca) #to see what pca contain
 ```
 
 #Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -61,25 +67,35 @@ pca <- prcomp(D2, scale = TRUE)
 ```{r}
 pca$sdev
 
-#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue (a special set of scalars associated with a linear system of equations) [Q]: Why are the variances and eigenvalues proportional? A guess: The variance shows how much the variable contribute to the explanation while the eigenvalues show how much each vector in the basis "weigh".
 
 pca$sdev^2
+# 1.6448423 1.1116675 1.0497412 0.9257299 0.7321737 0.5358454
+
+##notes: According to Kaiser criterion, we retain PCs with eigenvalue greater than 1. Just pointing out, in this case, PC1, PC2, and PC3 are greater than 1 but not PC4, PC5, and PC6. We would not discard anything at this point, but we will perform further analysis by keeping this in mind.##
 
 #A summary of our pca will give us the proportion of variance accounted for by each component
 
 summary(pca)
 
-#We can lot this to get an idea of which components we should keep and which we should drop
+#We can plot this to get an idea of which components we should keep and which we should drop (to see how each component contribute to explain the variance)
 
 plot(pca, type = "lines")
-```
 
 #Think about which components you would drop and make a decision
+#According to the pca plot, it seems reasonable to drop 6 (mean_confidence) to increase the efficiency.
+
+#another plot called screeplot does the same thing
+screeplot(pca, main = "Scree Plot", xlab = "Components")
+screeplot(pca, type = "line", main = "ScreePlot")
+##notes: [Q]: Is it the right idea? The idea is to drop components when the rate of change approaches zero compared to the previous component. In this case, PC3 has a small rate of change when compared with PC2. This is just an observation that one may drop PC3, PC4, PC5, and PC6 if extreme efficiency is desired.##
+```
+
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- as.data.frame(pca$x)
+D3 <- as.data.frame(pca$x) # x is the individual value obtained from the linear combination. 
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -87,8 +103,173 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
-
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#We mentioned that we might drop PC6 or take a more aggresive approach, keep only PC1 and PC2, to obtain efficiency. According to this correlation plot, we see that PC1 and PC2 are strongly and positively correlated with mean_correct. Dropping PC3 and PC5 are reasonable since the correlation is small. PC4 has a small yet substantial positive correlation with mean_correct so dropping it may result in some loss of information. Most importantly, PC6 has a strong negative correlation with mean_correct. Dropping this variable would result in a huge loss of information.
   
+##notes: Above, we demonstrated that the selection method of PCA (dropping some of the PCs) may result a loss of information. In the case when we have two or more highly correlated variables, we may use the extraction method (combining the PCs) in PCA to retain as much information as possible. See the next steps for detail.
 ```
 
+Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component (Eigenvectors are corresponded to the eigenvalues.)
+
+loadings <- abs(pca$rotation) 
+#abs() will make all eigenvectors positive
+
+pc_value <- sweep(loadings, 2, colSums(loadings), "/") 
+#sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?) 
+##Rnotes: sweep(x, MARGIN, STATS, FUN = "") MARGIN indicates whether you want to operate by row (MARGIN=1) or by column (MARGIN =2)
+#library(dplyr)
+#load <- as.data.frame(loadings)
+#transmute(load, colSum = colSums(load), pc_value2 = t(t(load) / colSum))
+# [Q] tried to use dplyr(), not working
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#Dot plot: Loadings Plot for PC1
+sorted.value1 = pc_value[order(pc_value[,1]),1]
+dotplot(sorted.value1, main = "Loadings Plot for PC1", xlab = "Variable Loadings")
+
+#For PC1, mean_hint, mean_attempt, and problems_attempted contribute the most. These three variables have to do with the number of times a student has attempted a new problem or attempted the same problem repeatedly. We can characterize PC1 as persistence.
+
+#Loadings Plot for PC2
+sorted.value2 = pc_value[order(pc_value[,2]),2]
+dotplot(sorted.value2, main = "Loadings Plot for PC2", xlab = "Variable Loadings")
+
+#For PC2, prior_percent_correct and prior_prob_count contribute the most and problems_attempted also contributes substantially. They have to do with how well and how many problems a student has done. Therefore, we can characterize PC2 as excellence.
+
+#Loadings Plot for PC3
+sorted.value3 = pc_value[order(pc_value[,3]),3]
+dotplot(sorted.value3, main = "Loadings Plot for PC3", xlab = "Variable Loadings")
+
+#For PC3, mean_confidence accounts for about 46%, prior_prob_count and  problems_attempted each contributes over 20%. The combination of student's confidence, number of problems done, and number of attempts can be termed rougly as faith as it has very little to do with the number of correct answers.
+
+#Loadings Plot for PC4
+sorted.value4 = pc_value[order(pc_value[,4]),4]
+dotplot(sorted.value4, main = "Loadings Plot for PC4", xlab = "Variable Loadings")
+
+#For PC4, prior_prob_count and mean_confidence accounts for 32% and 23%. These two variables are related to the number of problems a student has done and how confident they are. Unlike PC1, in which mean_hint contributes 30%, PC4 has the least to do with mean_hint, which means the number of hints a student needed. Therefore, compare to PC1, PC4 is more like unaided persistence.
+
+#Loadings Plot for PC5
+sorted.value5 = pc_value[order(pc_value[,5]),5]
+dotplot(sorted.value5, main = "Loadings Plot for PC5", xlab = "Variable Loadings")
+
+#For PC5, mean_attempt and problems_attempted each contributes more than 30%, while prior_percent_correct and mean_confidence contribute a little more than 10%, while mean_hint contributes very little, showing that PC5 has to do with number of attempts without hints. We can term PC5 as independent struggle.
+
+#Loadings Plot for PC6
+sorted.value6 = pc_value[order(pc_value[,6]),6]
+dotplot(sorted.value6, main = "Loadings Plot for PC6", xlab = "Variable Loadings")
+
+#Mean_hint contributes the most to PC6 up to 36% while mean_confidence contributes the least (less than 1%), other variables contribute roughly 15%. We can roughly term PC6 as reliance.
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca, expand = 1.5, main= "Biplot of PCA", xlim = c(-0.2, 0.1), ylim = c(-0.1, 0.2), cex = c(0.5,1))
+
+#[Observation] We see from the biplot that the vectors of mean_attempt and mean_hint are very close. It makes sense since they are both related to efforts and helps needed to complete a question. It is also worthmentioning that mean_confidence goes to the opposite direction of mean_hint and mean_attempt, since a confident student probably would use less hints. The vectors of problems_attempted and prior_problem count go together since they are related to the number of problems a student does now and then.The prior_percent_correct is closer to mean_confidence since high percentage of correct problems definitely feeds to higher confidence.
+
+# Apply the Varimax Rotation
+my.var <- varimax(pca$rotation)
+
+#[Instruction] Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+```
+
+```{r}
+#[I] Calculate values for each student for composite variables.
+
+#save the original data without the mean_correct variable into data
+data <- as.matrix(select(D1, -mean_correct))
+
+#extract the proportion of each variable from the pc_value
+proportion <- as.matrix(pc_value)
+
+#calculate the values of composite variable by matrix multiplication and save as D5
+D5 <- data%*%proportion
+  
+#Attach the variable "mean_correct" from your original data frame to D5.
+D6 <- cbind(D5, as.data.frame(D1$mean_correct))
+
+#Now re-run your scatterplots and correlations between the new values and mean_correct.
+COR3 <- cor(D6)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#[Observation] From the correlation plot, we see that the correlation of mean_correct and other new variables have correlations equal to or less than 10 on the scale of 100. Taking away mean_correct in the case of extraction does not lose much information compared to that in the case of selection. On the other hand, all PCs except for PC5 are 100% correlated to other PCs. [Q]:What does this mean? Recall that we termed PC5 as independent struggle, therefore this can be the reason why it has less to do with other PCs.
+```
+
+Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+#Load humor_data and save as humor
+humor <- read.csv("humor_data.csv", sep = ",", header = T)
+
+#Take a look at the data
+str(humor) 
+head(humor)
+
+#select only the questions for PCA analysis
+H <- select(humor, 1:32)
+
+#Rename the variables with the predefined categories to better visualize in a biplot
+names(H) <- c("Q1.AF","G2.SE","Q3.AG","Q4.SD","Q5.AF","Q6.SE","Q7.AG","Q8.SD","Q9.AF","Q10.SE","Q11.AG","Q12.SD","Q13.AF","Q14.SE","Q15.AG","Q16.AG","Q17.AF","Q18.SE","Q19.AG","Q20.SD","Q21.AF","Q22.SE","Q23.AG","Q24.SD","Q25.AF","Q26.SE","Q27.AG","Q28.SD","Q29.AF","Q30.SE","Q31.AG","Q32.SD")
+
+#scale and perform pca
+H2 <- scale(H, center = TRUE)
+pca_humor <- prcomp(H2, scale = TRUE)
+```
+
+```{r}
+#get the variance
+pca_humor$sdev
+
+pca_humor$sdev^2 #retain variables with eigen value greater than 1 (PC1 through PC7)
+
+summary(pca_humor)
+
+#generate pca plot
+plot(pca_humor, type = "lines") #probably keep PC1 through PC6, as the rate of change between PC6 and PC7 are close to zero
+
+```
+
+```{r}
+#Get the loadings for each PC
+H3 <- as.data.frame(pca_humor$x)
+
+loadings_h <- abs(pca_humor$rotation)
+
+pc_value_h <- sweep(loadings_h, 2, colSums(loadings_h), "/") 
+
+sorted.value1_h = pc_value_h[order(pc_value_h[,1]),1]
+dotplot(sorted.value1_h, main = "Loadings Plot for PC1", xlab = "Variable Loadings")
+
+#Create the biplot for humor data
+biplot(pca_humor, expand = 1.5, main= "Biplot of Humor", xlim = c(-0.15, 0.15), ylim = c(-0.1, 0.15), cex = c(0.5,1))
+#[Pretext]There are four categories of questions: Selfdefeating(SD), Selfenhancing(SE), Aggressive (AG), and Affliative(AF). SD and SE are similar in that they are both related to oneself, but with opposite attitudes in nature. (This is the same for AG and AF, which are both related to interactions with others.) SE and AF share the similar positivity, while SD and AG share the similar negativity. (Here we see enhancing and affliative as positive attitudes, and the rest negative.)
+
+#[Observation]Roughly speaking, we can see that each of the categories (SD,SE,AG,AF) is pointing toward a particular direction, with 90 degrees apart. That is, AF and SE are 180 degrees away from each other, and SD and AG are 180 degrees away from each other. We also notice that some questions in AG points toward the complete opposite direction, grouping themselves with SD, similar for AF and SE. 
+
+#[Inference]The biplot shows a pattern that matches the scales in some ways. First, most questions are properly grouped together: The questions in the same scale go either in the same direction or completely reverse direction (180 degrees). This means the questions are either grouped within the right scale or with the scale that shares a similar positive or negative attitude.
+
+#[Question] Does pointing away mean having opposite meanings? Remember to discuss with peers and professor.
+
+
+#Correlation plot
+my.var_h <- varimax(pca_humor$rotation)
+data_humor <- as.matrix(H)
+proportion_h <- as.matrix(pc_value_h)
+H4 <- data_humor%*%proportion_h
+CORR3 <- cor(H4)
+corrplot(CORR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+
+```
