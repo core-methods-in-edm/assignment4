@@ -16,10 +16,12 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.table("~/Desktop/FALL_2016/Assignment4/Assistments-confidence.csv", sep = ",", header = TRUE)
+
 
   #We won't need to id variable, so remove that.
 
+D2 <- dplyr::select(D1, 2:8)
 
 ```
 
@@ -44,7 +46,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- dplyr::select(D1, -4)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -61,13 +63,23 @@ pca <- prcomp(D2, scale = TRUE)
 ```{r}
 pca$sdev
 
+[1] 1.2825140 1.0543565 1.0245688 0.9621486 0.8556715 0.7320146
+
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
 
 pca$sdev^2
 
+[1] 1.6448423 1.1116675 1.0497412 0.9257299 0.7321737 0.5358454
+
 #A summary of our pca will give us the proportion of variance accounted for by each component
 
 summary(pca)
+
+Importance of components:
+                          PC1    PC2    PC3    PC4    PC5     PC6
+Standard deviation     1.2825 1.0544 1.0246 0.9621 0.8557 0.73201
+Proportion of Variance 0.2741 0.1853 0.1750 0.1543 0.1220 0.08931
+Cumulative Proportion  0.2741 0.4594 0.6344 0.7887 0.9107 1.00000
 
 #We can lot this to get an idea of which components we should keep and which we should drop
 
@@ -87,8 +99,48 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+D4 <- scale(D4, center = TRUE)
+> pca2 <- prcomp(D4, scale = TRUE)
+> pca2$sdev
+[1] 1.2737535 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 0.6144527
+> pca2$sdev^2
+[1] 1.6224479 1.0000000 1.0000000 1.0000000 1.0000000 1.0000000 0.3775521
+> summary(pca2)
+Importance of components:
+                          PC1    PC2    PC3    PC4    PC5    PC6     PC7
+Standard deviation     1.2738 1.0000 1.0000 1.0000 1.0000 1.0000 0.61445
+Proportion of Variance 0.2318 0.1429 0.1429 0.1429 0.1429 0.1429 0.05394
+Cumulative Proportion  0.2318 0.3746 0.5175 0.6603 0.8032 0.9461 1.00000
+> plot(pca2, type = "lines")  
+```
 
-  
+```{r}
+#so are we okay to remove prior-prob-count? 
+D5 <- dplyr::select(D1, 1:7)
+View(D5)
+D5 <- dplyr::select(D1, 2:7)
+COR3 <- cor(D5)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45,addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+D5 <- scale(D5, center = TRUE)
+COR3 <- cor(D5)
+pca3 <- prcomp(D5, scale = TRUE)
+pca3$sdev
+[1] 1.3620848 1.1318578 1.0118542 0.8715683 0.8555761 0.5900275
+pca3$sdev^2
+[1] 1.8552750 1.2811020 1.0238488 0.7596313 0.7320104 0.3481324
+summary(pca3)
+Importance of components:
+                          PC1    PC2    PC3    PC4    PC5     PC6
+Standard deviation     1.3621 1.1319 1.0119 0.8716 0.8556 0.59003
+Proportion of Variance 0.3092 0.2135 0.1706 0.1266 0.1220 0.05802
+Cumulative Proportion  0.3092 0.5227 0.6934 0.8200 0.9420 1.00000
+plot(pca3, type = "lines")
+D6 <- as.data.frame(pca3$x)
+View(D6)
+D6 <- cbind(D5, as.data.frame(D1$prior_prob_count))
+COR4 <- cor(D6)
+Based on the graph, I think the variance gets worse so I should not remove the prior_prob_count
 ```
 
