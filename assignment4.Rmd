@@ -1,9 +1,17 @@
 ---
+<<<<<<< HEAD
+title: "Principle Component Analysis"
+output: html_document
+---
+#Data
+The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+=======
 title: "Principle Component Aanalysis"
 output: html_document
 ---
 #Data
 The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+>>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 
 - id
 - prior_prob_count: How many problems a student has answered in the system prior to this session
@@ -16,11 +24,22 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
+<<<<<<< HEAD
+#setwd("C:/Users/Magdalena Bennett/Dropbox/PhD Columbia/Fall 2016/Core Methods in EDM/assignment4")
+
+D1 <- read.csv("Assistments-confidence.csv")
+names(D1)
+
+#We remove the ID, because we are not going to use it.
+D1 <- D1[,-1]
+names(D1)
+=======
 D1 <- 
 
   #We won't need to id variable, so remove that.
 
 
+>>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 ```
 
 #Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
@@ -38,6 +57,18 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
+<<<<<<< HEAD
+```
+
+- The diagonal of the correlation plot, shows that there is a 100\% correlation between a variable and itself (which is fairly obvious). The size of the circles (and the intensity of the color) will graphically show us the magnitude of the correlation, while the color of the circle will show us whether the correlation is positive (blueish) or negative (redish). In this case, we can observe that *mean_hint* has a strong negative correlation to *mean_correct*, and a slight negative correlation with *prior_percent_correct*. The variable *mean_hint* also seems to be slighlty positively correlated to *median_attempt*, *problems_attempted*, and *prior_prob_count*. Additionally, *mean_attempt* is positively correlated with *prior_percent_correct* and *problems_attempted*. Other variables do nos seem to be significantly correlated.
+
+#Create a new data frame with the mean_correct variables removed
+
+```{r}
+D2 <- D1[,-which(names(D1)=="mean_correct")]
+
+names(D2)
+=======
 #Study your correlogram image and save it, you will need it later
 ```
 
@@ -45,6 +76,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 
 ```{r}
 D2 <- 
+>>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -54,6 +86,11 @@ D2 <- scale(D2, center = TRUE)
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
+<<<<<<< HEAD
+
+pca
+=======
+>>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 ```
 
 #Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -72,6 +109,21 @@ summary(pca)
 #We can lot this to get an idea of which components we should keep and which we should drop
 
 plot(pca, type = "lines")
+<<<<<<< HEAD
+
+#We can also get the cummulative variation that they explain:
+
+var <- pca$sdev^2
+cv <- var/sum(var)
+
+#Percentage of variation each component explain
+plot(cv, xlab="Principal Component", ylab="Proportion of Variance Explained", ylim=c(0,1),type='b')
+
+#Cummulative percentage of variation each component explains
+plot(cumsum(cv), xlab="Principal Component", ylab="Cumulative Proportion of Variance Explained", ylim=c(0,1),type='b')
+
+=======
+>>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 ```
 
 #Think about which components you would drop and make a decision
@@ -87,8 +139,43 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
+<<<<<<< HEAD
+COR2 <- cor(D4)
+  
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+  
+```
+
+- We can see that if we use the principal components, by constructions they won't be correlated (because they have to be orthogonal). In this case, we can se that *mean_correct* is positively correlated (with a moderate magnitude) with the first and second principal component. As well, it appears to have a moderate negative correlation with the sixth principal component. In that sense, we probably are not losing much information by dropping *mean_correct* as it is being somewhat captured by the 1st, 2nd, and 6th principal component. This can also be observed in our first correlation plot, where *mean_correct* was moderately correlated with *prior_percent_correct* and highly correlated with *mean_hint*, which means that those variables contain a relevant portion of the information in the *mean_correct* variable.
+
+- To check this, we can add the variable *mean_correct* and run PCA again:
+
+```{r}
+
+pca2 <- prcomp(D1, scale = TRUE)
+
+summary(pca2)
+
+plot(pca2, type = "lines")
+
+var <- pca2$sdev^2
+cv <- var/sum(var)
+
+#Percentage of variation each component explain
+plot(cv, xlab="Principal Component", ylab="Proportion of Variance Explained", ylim=c(0,1),type='b')
+
+#Cummulative percentage of variation each component explains
+plot(cumsum(cv), xlab="Principal Component", ylab="Cumulative Proportion of Variance Explained", ylim=c(0,1),type='b')
+```
+
+- Adding one more component (even though it is not directly comparable to using 6 components) appears not to make much difference, as the seventh PC explains very little of the variance. This would support our idea that we would not lose much information by not including *mean_correct*
+=======
 COR2 <- 
 
   
 ```
 
+>>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
