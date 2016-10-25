@@ -98,3 +98,6 @@ corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",
   
 ```
 image: ![](correlation2.jpeg)
+
+if we drop some components, we would not lose important information. The components with larger eigenvalues contrain the scale and trends information of original data. 
+
