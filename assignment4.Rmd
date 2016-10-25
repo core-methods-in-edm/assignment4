@@ -97,4 +97,4 @@ corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",
          sig.level=0.50, insig = "blank")
   
 ```
-image: ![](Correlation2.jpeg)
+image: ![](correlation2.jpeg)
