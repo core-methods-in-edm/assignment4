@@ -44,7 +44,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- dplyr::select(D1, 2:8)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -87,7 +87,8 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
 
   
 ```
