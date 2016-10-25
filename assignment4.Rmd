@@ -16,9 +16,16 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("~/Documents/Intro DS/Tutorials/Dm-Class/assignment4/Assistments-confidence.csv")
+
 
   #We won't need to id variable, so remove that.
+
+library(tidyr)
+library(dplyr)
+
+D1 <- select(D1, -1)
+
 
 
 ```
@@ -44,7 +51,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- select(D1, -4)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -87,8 +94,15 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
   
 ```
+
+Yes, there is always a trade off, so if you had dropped some components like PCA6 because the variance is closest to 0, then you would lose important information about mean_correct. So we can potentially remove PC5 and PC4 in order to not lose much important information.  
 
