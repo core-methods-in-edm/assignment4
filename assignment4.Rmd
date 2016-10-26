@@ -3,7 +3,7 @@ title: "Principle Component Aanalysis"
 output: html_document
 ---
 #Data
-The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
 
 - id
 - prior_prob_count: How many problems a student has answered in the system prior to this session
@@ -16,10 +16,12 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
-D1 <- 
+setwd("~/GitHub/assignment4")
+D1 <- read.csv('Assistments-confidence.csv', header = TRUE)
 
   #We won't need to id variable, so remove that.
-
+#Drop ID column
+D1$id <- NULL
 
 ```
 
@@ -44,9 +46,12 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+library(dplyr)
+library(tidyr)
 
-#The, scale and center your data for easier interpretation
+D2 <- dplyr::select(D1, 1:3, 5:7)
+
+#Then scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
 ```
 
@@ -87,8 +92,10 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
-
-  
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
 
