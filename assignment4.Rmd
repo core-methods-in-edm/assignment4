@@ -172,6 +172,8 @@ plot(cumsum(cv), xlab="Principal Component", ylab="Cumulative Proportion of Vari
 ```
 
 - Adding one more component (even though it is not directly comparable to using 6 components) appears not to make much difference, as the seventh PC explains very little of the variance. This would support our idea that we would not lose much information by not including *mean_correct*
+
+- I assumed theat *mean_correct* ws just another characteristic, but if it is the outcome that we are interested in, then the same logic applies. Dropping the last PC because it explains little variance would probably be a mistake, as it is strongly correlated with the outcome of interest.
 =======
 COR2 <- 
 
