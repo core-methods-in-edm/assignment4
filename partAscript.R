@@ -1,4 +1,9 @@
 library(corrplot)
+library(devtools)
+library(ggbiplot)
+
+options("device"="RStudioGD")
+graphics.off()
 
 D1 <- read.table("Assistments-confidence.csv", sep = ",", header = TRUE)
 
@@ -27,3 +32,23 @@ corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",
          tl.col="black", tl.cex=0.6, tl.srt=45, 
          addCoef.col="black", addCoefasPercent = TRUE,
          sig.level=0.50, insig = "blank")
+
+
+pca$rotation
+
+loadings <- abs(pca$rotation)
+
+# stats has to contain row summary statistics; 
+#margin=2 refers to the columns
+#stats then has to contain column summary statistics. 
+
+sweep(loadings, 2, colSums(loadings), "/") 
+
+biplot(pca)
+quartz()
+fit <- princomp(D3,cor=TRUE)
+biplot(fit)
+
+
+
+
