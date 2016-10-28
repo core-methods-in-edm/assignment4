@@ -150,7 +150,9 @@ corrplot(COR5, order="AOE", method="circle", tl.pos="lt", type="upper",
 
 ```
 
-image: ![](cor5.jpeg)
+image: ![](cor5.jpeg) 
+
+mean_correct shows no strong correlation with any PCs in this case....
 ```{r}
 pca2$rotation
 
