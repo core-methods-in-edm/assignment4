@@ -150,7 +150,7 @@ corrplot(COR5, order="AOE", method="circle", tl.pos="lt", type="upper",
 
 ```
 
-image: ![](Cor4.jpeg)
+image: ![](cor5.jpeg)
 ```{r}
 pca2$rotation
 
