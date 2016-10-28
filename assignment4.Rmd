@@ -13,21 +13,22 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 - mean_hint: The average number of hints a student asked for in the current session
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
-
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
 #Start by uploading the data
 ```{r}
-D1 <- 
-
-  #We won't need to id variable, so remove that.
-
-
+D1 <- read.table("~/Desktop/HUDK class/Assignment 4/Assistments-confidence.csv", sep = ",", header = TRUE)
+D1 <- dplyr::select(D1, 2:8) #drop ID
 ```
 
 #Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+install.packages("corrplot") 
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,7 +45,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- dplyr::select(D1,-4)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -75,10 +76,11 @@ plot(pca, type = "lines")
 ```
 
 #Think about which components you would drop and make a decision
+Drop PC6 because it's the closest to 0 
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
-
+library(corrplot)
 D3 <- as.data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
@@ -87,8 +89,158 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
   
 ```
 
+#Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+porportion <- sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+eigen <-t(porportion) #I tranpose porpotion so that we have variables in columns, which make it easier for me to look at. But we do not have to do this step though....
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca) # I still do not understand this graph T.T
+```
+
+
+```{r}
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+# let's makesure that we have the plot
+library(corrplot)
+
+
+#Base on PC1, let's make a variable called persist since all the highest value seems to links with variables that presents persistance
+D1$persist=(eigen[1,1]*D1[,1])+(eigen[1,2]*D1[,2])+(eigen[1,3]*D1[,3]) +(eigen[1,4]*D1[,5])+(eigen[1,5]*D1[,6])+(eigen[1,6]*D1[,7])
+
+#Base on PC2, let's make a variable called prior.
+D1$prior=(eigen[2,1]*D1[,1])+(eigen[2,2]*D1[,2])+(eigen[2,3]*D1[,3]) +(eigen[2,4]*D1[,5])+(eigen[2,5]*D1[,6])+(eigen[2,6]*D1[,7])
+
+#Base on PC3, let's make a variable called motivation
+D1$confidence=(eigen[3,1]*D1[,1])+(eigen[3,2]*D1[,2])+(eigen[3,3]*D1[,3]) +(eigen[3,4]*D1[,5])+(eigen[3,5]*D1[,6])+(eigen[3,6]*D1[,7])
+
+D1 <-as.data.frame(D1) # make sure it's data.frame
+
+COR3 <- cor(D1)
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.050, insig = "blank")
+
+
+```
+
+#Below is my attempt do the loop/automate results
+
+```{r}
+#Make sure dataset D1 has equal column like eigen and scale it
+library(dplyr)
+D1 <- read.table("~/Desktop/HUDK class/Assignment 4/Assistments-confidence.csv", sep = ",", header = TRUE)
+D1 <- dplyr::select(D1, 2:8) #drop ID
+D7 <- select(D1,-4) #creat new dataset D7 to play with
+
+```
+
+```{r}
+#Data set D7: n columns, m rows. n represents number of variables and m represents numbers of students
+#Data set eigen: n columns, x rows. n once again represents number of variables and x is the number of Components (which happend to be = n, anyways)
+
+for (m in 1:nrow(D7))	 	#for each row of D7
+{  
+  for (x in 1:nrow(eigen))  #for each row of eigen
+  { 
+    Sum == 0;   #reset sum for new calculation for each row of D7
+    #Adding all multiplies together for each rows of D1
+    for (c in 1:ncol(eigen))	#for each column
+      {
+      Sum == Sum + (D7[m,c] * eigen[x,c])
+      }
+		D7[m,ncol(eigen) + x] = Sum   #adding a new column to D7
+  }
+}
+
+
+```
+
+
+
+#Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+#Start by uploading the data
+```{r}
+A1 <- read.table("~/Desktop/HUDK class/assignment4_new/humor_data.csv", sep = ",", header = TRUE)
+
+
+# Choose variable that makes sense and interesting
+
+A1 <- dplyr::select(A1, 1:32)
+
+```
+
+#Generate pairwise correlations
+
+```{r}
+COR <- cor(A1)
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+```
+#Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(A1, scale = TRUE)
+```
+
+#Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca)
+
+#We can lot this to get an idea of which components we should keep and which we should drop
+
+plot(pca, type = "lines")
+```
+
+#Think about which components you would drop and make a decision
+Drop anything below PC10 because it's the closest to 0 
+
+
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+porportion <- sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+eigen <-t(porportion)
+
+```
