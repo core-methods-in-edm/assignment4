@@ -179,19 +179,19 @@ corrplot(COR6, order="AOE", method="circle", tl.pos="lt", type="upper",
 ```
 
 image: ![](cor6.jpeg)
-
+There are some questions are correlated with each others, forming a heatmap-like pattern in the correlation graph.
 ```{r}
 pca3 <- prcomp(P2, scale = TRUE)
 pca3$sdev
 pca3$sdev^2
 summary(pca3)
 plot(pca3, type = "lines")
-#6 PCs explain the majority of variences
+
 
 ```
 
 image: ![](pca3b.jpeg)
-
+#First 6 PCs explain the majority of variences. we could drop the other components in PCA.
 ```{r}
 pca3$rotation
 loadings3 <- abs(pca3$rotation)
@@ -204,7 +204,7 @@ biplot(fit)
 ```
 
 image: ![](pca_partB.jpeg)
-
+Confirmed that we do not need to keep all 32 components because they overlab with each other. We can keep 6 principle components for analysis.
 ```{r}
 P3 <- as.data.frame(pca3$x)
 P4 <- dplyr::select(P3, 1:6)
@@ -218,7 +218,7 @@ corrplot(COR7, order="AOE", method="circle", tl.pos="lt", type="upper",
 ```
 
 image: ![](affiliative_PCA.jpeg)
-
+PC1 is 0.76 negatively correlated to affiliative score.
 ```{r}
 P6 <- cbind(P4, as.data.frame(P1$selfenhancing))
 COR8 <- cor(P6)
@@ -229,7 +229,7 @@ corrplot(COR8, order="AOE", method="circle", tl.pos="lt", type="upper",
 ```
 
 image: ![](selfenhance_PCA.jpeg)
-
+PC1 is 0.69 negatively correlated to selfenhancing score.
 ```{r}
 
 P7 <- cbind(P4, as.data.frame(P1$agressive))
@@ -241,7 +241,7 @@ corrplot(COR9, order="AOE", method="circle", tl.pos="lt", type="upper",
 ```
 
 image: ![](aggressive_PCA.jpeg)
-
+PC5 is 0.58 positively correlated to aggressive score.
 ```{r}
 
 P8 <- cbind(P4, as.data.frame(P1$selfdefeating))
@@ -253,3 +253,4 @@ corrplot(COR10, order="AOE", method="circle", tl.pos="lt", type="upper",
 ```
 
 image: ![](selfdefeating_PCA.jpeg)
+PC1 is 0.59 positively correlated to selfdefeating score. PC1 is 0.56 negatively correlated to selfdefeating score.
