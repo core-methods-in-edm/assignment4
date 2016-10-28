@@ -121,17 +121,135 @@ From the loadings, we could see component 1 represents 0.63 of meanhint, 0.45 of
 biplot(pca)
 ```
 image: ![](pca2.jpeg)
-image: ![](princomp.jpeg)
+image: ![](pca3.jpeg)
 
-we could see there are 3 components almost overlab with each other, therefore we eliminate those 2 components represent least information. 
-
-
-
+we could see there are 3 components (PCA 1&5&6) almost overlab with each other. Therefore, we could eliminate those 2 components (PCA 5&6) represented least information. 
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+(Not sure if I understand the problem in the right way....) 
 
 
+```{r}
+D10 <- t(D2)
+pca2 <- prcomp(D10, scale = TRUE)
+pca2$sdev
+pca2$sdev^2
+summary(pca2)
+plot(pca2, type = "lines")
+D11 <- as.data.frame(pca2$x)
+D12 <- cbind(D11, as.data.frame(D1$mean_correct)) 
+# I dont understant how this works, but it works....
+
+COR5 <- cor(D12)
+corrplot(COR5, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+
+
+
+```
+
+image: ![](Cor4.jpeg)
+```{r}
+pca2$rotation
+
+loadings2 <- abs(pca2$rotation)
+sweep(loadings2, 2, colSums(loadings2), "/") 
+
+biplot(pca2)
+fit <- princomp(D11,cor=TRUE)
+biplot(fit)
+
+```
+image: ![](PCA4.jpeg)
 
 #Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
 
+```{r}
+P1 <- read.table("humor_data.csv", sep = ",", header = TRUE)
 
+P2 <- dplyr::select(P1, 1:32)
+
+COR6 <- cor(P2)
+corrplot(COR6, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+```
+
+image: ![](cor6.jpeg)
+
+```{r}
+pca3 <- prcomp(P2, scale = TRUE)
+pca3$sdev
+pca3$sdev^2
+summary(pca3)
+plot(pca3, type = "lines")
+#6 PCs explain the majority of variences
+
+```
+
+image: ![](pca3b.jpeg)
+
+```{r}
+pca3$rotation
+loadings3 <- abs(pca3$rotation)
+sweep(loadings3, 2, colSums(loadings3), "/") 
+biplot(pca3)
+
+fit <- princomp(P2,cor=TRUE)
+biplot(fit)
+
+```
+
+image: ![](pca_partB.jpeg)
+
+```{r}
+P3 <- as.data.frame(pca3$x)
+P4 <- dplyr::select(P3, 1:6)
+
+P5 <- cbind(P4, as.data.frame(P1$affiliative))
+COR7 <- cor(P5)
+corrplot(COR7, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+```
+
+image: ![](affiliative_PCA.jpeg)
+
+```{r}
+P6 <- cbind(P4, as.data.frame(P1$selfenhancing))
+COR8 <- cor(P6)
+corrplot(COR8, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+```
+
+image: ![](selfenhance_PCA.jpeg)
+
+```{r}
+
+P7 <- cbind(P4, as.data.frame(P1$agressive))
+COR9 <- cor(P7)
+corrplot(COR9, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+```
+
+image: ![](aggressive_PCA.jpeg)
+
+```{r}
+
+P8 <- cbind(P4, as.data.frame(P1$selfdefeating))
+COR10 <- cor(P8)
+corrplot(COR10, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+```
+
+image: ![](selfdefeating_PCA.jpeg)
