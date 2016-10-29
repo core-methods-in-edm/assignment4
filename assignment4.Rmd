@@ -166,17 +166,15 @@ for (m in 1:nrow(D7))	 	#for each row of D7
 {  
   for (x in 1:nrow(eigen))  #for each row of eigen
   { 
-    Sum == 0;   #reset sum for new calculation for each row of D7
+    Sum = 0;   #reset sum for new calculation for each row of D7
     #Adding all multiplies together for each rows of D1
     for (c in 1:ncol(eigen))	#for each column
-      {
-      Sum == Sum + (D7[m,c] * eigen[x,c])
-      }
-		D7[m,ncol(eigen) + x] = Sum   #adding a new column to D7
+    {
+      Sum = Sum + (D7[m,c] * eigen[x,c])
+    }
+    D7[m,ncol(eigen) + x] = Sum   #adding a new column to D7
   }
 }
-
-
 ```
 
 
