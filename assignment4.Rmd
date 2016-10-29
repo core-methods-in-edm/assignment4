@@ -131,32 +131,54 @@ biplot(pca)
 
 #Calculate values for each student that represent  your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
-D1$persistence <- D1$prior_prob_count*0.12423113 + D1$prior_percent_correct*0.08035956 +D1$problems_attempted*0.21744737 + D1$mean_hint*0.30223780 + D1$mean_attempt*0.25863458 + D1$mean_confidence*0.01708956
+###D1$persistence <- D1$prior_prob_count*0.12423113 + D1$prior_percent_correct*0.08035956 +D1$problems_attempted*0.21744737 + D1$mean_hint*0.30223780 + D1$mean_attempt*0.25863458 + D1$mean_confidence*0.01708956
+
+
+### Or I can use our new function to create the new dataset with all the composite variables 
+
+lala <- function(A, B){
+  for (m in 1:nrow(A))	 	#for each row of A
+  {  
+    for (x in 1:nrow(B))  #for each row of B
+    { 
+      Sum = 0;   #reset sum for new calculation for each row of A
+      #Adding all multiplies together for each rows of A
+      for (c in 1:ncol(B))	#for each column of B
+      {
+        Sum = Sum + (A[m,c] * B[x,c])
+      }
+      A[m,ncol(B) + x] = Sum
+      #adding a new column to A
+    }
+    A[m,ncol(B) + x] <- A
+  }
+  return(A)
+}
 
 D1 <- select(D1,-1)
+D5 <- select(D1, -4)
+D6 <- t(proportion1)
 
+newD1 <- lala(D5, D6)
 
+### Remove the 12th variable because it is a constant 
 
-CORR3 <- cor(D1)
+newD1 <- select(newD1, -12)
+
+###install.packages("data.table")
+
+library(data.table)
+setnames(newD1, "V7", "persistence" )
+head(newD1)
+
+D8 <- cbind(newD1, as.data.frame(D1$mean_correct))
+CORR3 <- cor(D8)
+
 corrplot(CORR3, order="AOE", method="circle", tl.pos="lt", type="upper",
 tl.col="black", tl.cex=0.6, tl.srt=45,
 addCoef.col="black", addCoefasPercent = TRUE,
 sig.level=0.50, insig = "blank")
 
-D5 <- select(D1, -4)
-D5 <- scale(D5, center= TRUE)
-pca2 <- prcomp(D5, scale = TRUE)
-pca2$sdev
-pca2$sdev^2
-summary(pca2)
-plot(pca2, type = "lines")
-D6 <- as.data.frame(pca2$x)
-D7 <- cbind(D6, as.data.frame(D1$mean_correct))
-CORR4 <- cor(D7)
-corrplot(CORR4, order="AOE", method="circle", tl.pos="lt", type="upper",
-tl.col="black", tl.cex=0.6, tl.srt=45,
-addCoef.col="black", addCoefasPercent = TRUE,
-sig.level=0.50, insig = "blank")
 
 
 
@@ -197,10 +219,16 @@ pca1$rotation
 loadings1 <- abs(pca1$rotation) ### Making eigen values positive by taking the absolute value 
 
 proportion2 <- sweep(loadings1, 2, colSums(loadings1), "/")
-proportion2
+
+### Transpose proportion2 
+
+H4 <- t(proportion2)
  
 biplot(pca1)
 
+### Testing our new lala function to create the composites variables: 
+
+meme <- lala(H1, H4)
 
 
 ```
