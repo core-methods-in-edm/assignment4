@@ -5,6 +5,7 @@ output: html_document
 #Data
 The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
 
+
 - id
 - prior_prob_count: How many problems a student has answered in the system prior to this session
 - prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
@@ -14,101 +15,646 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
 
+
 #Start by uploading the data
 ```{r}
-D1 <- 
-
+D1 <- read.csv("Assistments-confidence.csv")
+D1<- D1[,2:8]
   #We won't need to id variable, so remove that.
+
+
 
 
 ```
 
+
 #Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
+
 library(corrplot)
+
 
 #Generate pairwise correlations
 COR <- cor(D1)
+
 
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
+
 #Study your correlogram image and save it, you will need it later
 ```
 
+
 #Create a new data frame with the mean_correct variables removed
 
+
 ```{r}
-D2 <- 
+D2a <- D1[,1:3]
+D2b <-D1[,5:7]
+D2<- cbind(D2a, D2b)
+
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
 ```
 
+
 #Now run the PCA on the new data frame
+
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
 ```
 
+
 #Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
 
 ```{r}
 pca$sdev
 
+
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
 
 pca$sdev^2
 
+
 #A summary of our pca will give us the proportion of variance accounted for by each component
+
 
 summary(pca)
 
+
 #We can lot this to get an idea of which components we should keep and which we should drop
+
 
 plot(pca, type = "lines")
 ```
 
+
 #Think about which components you would drop and make a decision
+
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
+
 D3 <- as.data.frame(pca$x)
+
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
+
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+
+COR2 <- cor(D4)
+  
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+# yes because, if you removed one the first one you would remove is PC6. However PC6 has a relatively strong negative correlation with mean_correct and therefore it probably explains some variance in mean_correct and should stay.
+
+
+
+
+  
+```
+
+
+---
+title: "Principle Component Aanalysis"
+output: html_document
+---
+#Data
+The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+
+
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+
+
+
+#Start by uploading the data
+```{r}
+D1 <- read.csv("Assistments-confidence.csv")
+D1<- D1[,2:8]
+  #We won't need to id variable, so remove that.
+
+
+
+
+
+
+
 
 ```
+
+
+
+
+#Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+
+
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+
+
+
+
+library(corrplot)
+
+
+
+
+#Generate pairwise correlations
+COR <- cor(D1)
+
+
+
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+
+
+#Study your correlogram image and save it, you will need it later
+```
+
+
+
+
+#Create a new data frame with the mean_correct variables removed
+
+
+
+
+```{r}
+D2a <- D1[,1:3]
+D2b <-D1[,5:7]
+D2<- cbind(D2a, D2b)
+
+
+
+
+#The, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+```
+
+
+
+
+#Now run the PCA on the new data frame
+
+
+
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+
+
+
+#Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+
+
+
+```{r}
+pca$sdev
+
+
+
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+
+
+
+pca$sdev^2
+
+
+
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+
+
+
+summary(pca)
+
+
+
+
+#We can lot this to get an idea of which components we should keep and which we should drop
+
+
+
+
+plot(pca, type = "lines")
+```
+
+
+
+
+#Think about which components you would drop and make a decision
+
+
+
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.
+
+
+
+
+D3 <- as.data.frame(pca$x)
+
+
+
+
+#Attach the variable "mean_correct" from your original data frame to D3.
+
+
+
+
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+
+
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+
+
+
+
+COR2 <- cor(D4)
+  
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+
+
+# yes because, if you removed one the first one you would remove is PC6. However PC6 has a relatively strong negative correlation with mean_correct and therefore it probably explains some variance in mean_correct and should stay.
+
+
+
+
+
+
+
+
+  
+```
+
+
+
+
+
+
+---
+title: "Principle Component Aanalysis"
+output: html_document
+---
+#Data
+The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+
+#Start by uploading the data
+```{r}
+D1 <- read.csv("Assistments-confidence.csv")
+D1<- D1[,2:8]
+  #We won't need to id variable, so remove that.
+
+
+
+
+```
+
+
+#Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+
+
+library(corrplot)
+
+
+#Generate pairwise correlations
+COR <- cor(D1)
+
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+#Study your correlogram image and save it, you will need it later
+```
+
+
+#Create a new data frame with the mean_correct variables removed
+
+
+```{r}
+D2a <- D1[,1:3]
+D2b <-D1[,5:7]
+D2<- cbind(D2a, D2b)
+
+
+#The, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+```
+
+
+#Now run the PCA on the new data frame
+
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+
+#Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+
+```{r}
+pca$sdev
+
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+
+pca$sdev^2
+
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+
+summary(pca)
+
+
+#We can lot this to get an idea of which components we should keep and which we should drop
+
+
+plot(pca, type = "lines")
+```
+
+
+#Think about which components you would drop and make a decision
+
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.
+
+
+D3 <- as.data.frame(pca$x)
+
+
+#Attach the variable "mean_correct" from your original data frame to D3.
+
+
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+
+
+COR2 <- cor(D4)
+  
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+# yes because, if you removed one the first one you would remove is PC6. However PC6 has a relatively strong negative correlation with mean_correct and therefore it probably explains some variance in mean_correct and should stay.
+
+
+
+
+  
+```
+
+
+
+
 #Now print out the eigenvectors (often called loadings) for the components you generated:
+
+
+
 
 ```{r}
 pca$rotation
 
+
+
+
 #Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+
+
 
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
-sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+
+
+t<-sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+
+
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
+
+
+
+# PC1 - MAYBE ATTEMPTS AND HINTS, PC2- PRIOR INFO (HOW MUCH CORRECT), PC3  CONFIDENCE OF STUDENT, PC4 NO INTERPRETATION, PC5 ATTEMPTS, PC6- HINTS MAYBE 
+
+
+
+
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+
+
 
 biplot(pca)
 
+
+
+
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+D2<-as.data.frame(D2)
+t<-as.data.frame(t)
+
+
+
+
+D2$persist<-.12*D2$prior_prob_count + .08*D2$prior_percent_correct + .22*D2$problems_attempted +.30*D2$mean_hint +.26*D2$mean_attempt + .01*D2$mean_confidence
+
+
+D2$preparedness<-.25*D2$prior_prob_count + .44*D2$prior_percent_correct + .17*D2$problems_attempted +.07*D2$mean_hint +.05*D2$mean_attempt + .01*D2$mean_confidence
+
+
+D2$confidence<-.22*D2$prior_prob_count + .05*D2$prior_percent_correct + .20*D2$problems_attempted +.04*D2$mean_hint +.03*D2$mean_attempt + .46*D2$mean_confidence
+
+
+D2$notsure<-.31*D2$prior_prob_count + .12*D2$prior_percent_correct + .14*D2$problems_attempted +.05*D2$mean_hint +.14*D2$mean_attempt + .27*D2$mean_confidence
+
+
+
+
+D2$attempts<-.00*D2$prior_prob_count + .15*D2$prior_percent_correct + .30*D2$problems_attempted +.05*D2$mean_hint +.36*D2$mean_attempt + .13*D2$mean_confidence
+
+
+D2$hints<-.14*D2$prior_prob_count + .18*D2$prior_percent_correct + .16*D2$problems_attempted +.37*D2$mean_hint +.16*D2$mean_attempt + .00*D2$mean_confidence
+
+
+D5 <- cbind(D2, as.data.frame(D1$mean_correct))
+
+
+
+
+COR3 <- cor(D5[,7:13])
+  
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+
+
+
 
 ```
 
+
+
+
 #Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+
+```{r}
+
+
+C1<-read.csv("humor_data.csv")
+C2<-C1[1:32]
+
+
+COR <- cor(C2)
+
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+C3 <- scale(C2, center = TRUE)
+
+
+pca <- prcomp(C3, scale = TRUE)
+
+
+pca$sdev
+
+
+
+
+pca$sdev^2
+
+
+
+
+summary(pca)
+
+
+
+
+
+
+plot(pca, type = "lines")
+
+
+#I will keep PC1-5
+pca<-as.data.frame(pca)
+
+
+
+
+C4 <- as.data.frame(pca$x)
+
+
+#Attach the variable "mean_correct" from your original data frame to D3.
+C5<-C4[,1:5]
+C6 <- cbind(C5, as.data.frame(C1[,33:38]))
+
+
+
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+
+
+COR2 <- cor(C6)
+  
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+
+
+```
+
+
+
+
