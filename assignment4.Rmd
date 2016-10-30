@@ -155,7 +155,7 @@ lala <- function(A, B){
   return(A)
 }
 
-D1 <- select(D1,-1)
+
 D5 <- select(D1, -4)
 D6 <- t(proportion1)
 
@@ -171,6 +171,18 @@ library(data.table)
 setnames(newD1, "V7", "persistence" )
 head(newD1)
 
+#### Take out the old data and only use the new composite values 
+
+newD2 <- select(newD1, -(1:6))
+
+D7 <- cbind(newD2, as.data.frame(D1$mean_correct))
+
+CORRT <- cor(D7)
+corrplot(CORRT, order="AOE", method="circle", tl.pos="lt", type="upper",
+tl.col="black", tl.cex=0.6, tl.srt=45,
+addCoef.col="black", addCoefasPercent = TRUE,
+sig.level=0.50, insig = "blank")
+
 D8 <- cbind(newD1, as.data.frame(D1$mean_correct))
 CORR3 <- cor(D8)
 
@@ -178,7 +190,6 @@ corrplot(CORR3, order="AOE", method="circle", tl.pos="lt", type="upper",
 tl.col="black", tl.cex=0.6, tl.srt=45,
 addCoef.col="black", addCoefasPercent = TRUE,
 sig.level=0.50, insig = "blank")
-
 
 
 
