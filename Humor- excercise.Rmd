@@ -1,0 +1,205 @@
+---
+title: "Humor-excercise"
+author: "jiaxili"
+date: "October 27, 2016"
+output: html_document
+---
+
+#Start by uploading the data
+```{r}
+K1 <-  read.table ("humor_data.csv", sep = ",") 
+
+install.packages("corrplot")
+
+library(corrplot)
+library(dplyr)
+
+```
+
+#Arrange datasets
+```{r}
+#Rename columns for dataframe
+names(K1) <- c("Q1", "Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","Q21","Q22","Q23","Q24","Q25","Q26","Q27","Q28","Q29","Q30","Q31","Q32","affiliative","selfenhancing","agressive","selfdefeating","age","gender","accuracy" )
+
+# Remove the first row which contains column names not values 
+K1 <- dplyr::slice(K1, 2:1072)
+```
+
+#Prestep of pca
+```{r}
+#Need numeric "x" to operate cor function
+K1$Q1 <-as.numeric(K1$Q1)
+K1$Q2 <-as.numeric(K1$Q2)
+K1$Q3 <-as.numeric(K1$Q3)
+K1$Q4 <-as.numeric(K1$Q4)
+K1$Q5 <-as.numeric(K1$Q5)
+K1$Q6 <-as.numeric(K1$Q6)
+K1$Q7 <-as.numeric(K1$Q7)
+K1$Q8 <-as.numeric(K1$Q8)
+K1$Q9 <-as.numeric(K1$Q9)
+K1$Q10 <-as.numeric(K1$Q10)
+K1$Q11 <-as.numeric(K1$Q11)
+K1$Q12 <-as.numeric(K1$Q12)
+K1$Q13 <-as.numeric(K1$Q13)
+K1$Q14 <-as.numeric(K1$Q14)
+K1$Q15 <-as.numeric(K1$Q15)
+K1$Q16 <-as.numeric(K1$Q16)
+K1$Q17 <-as.numeric(K1$Q17)
+K1$Q18 <-as.numeric(K1$Q18)
+K1$Q19 <-as.numeric(K1$Q19)
+K1$Q20 <-as.numeric(K1$Q20)
+K1$Q21 <-as.numeric(K1$Q21)
+K1$Q22 <-as.numeric(K1$Q22)
+K1$Q23 <-as.numeric(K1$Q23)
+K1$Q24 <-as.numeric(K1$Q24)
+K1$Q25 <-as.numeric(K1$Q25)
+K1$Q26 <-as.numeric(K1$Q26)
+K1$Q27 <-as.numeric(K1$Q27)
+K1$Q28 <-as.numeric(K1$Q28)
+K1$Q29 <-as.numeric(K1$Q29)
+K1$Q30 <-as.numeric(K1$Q30)
+K1$Q31 <-as.numeric(K1$Q31)
+K1$Q32 <-as.numeric(K1$Q32)
+K1$affiliative <-as.numeric(K1$affiliative)
+K1$selfenhancing <-as.numeric(K1$selfenhancing)
+K1$agressive <-as.numeric(K1$agressive)
+K1$selfdefeating <-as.numeric(K1$selfdefeating)
+K1$age <-as.numeric(K1$age)
+K1$gender <-as.numeric(K1$gender)
+K1$accuracy <-as.numeric(K1$accuracy)
+```
+
+#Generate pairwise correlations for original datasets
+```{r}
+COR <- cor(K1)
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+```
+
+#Create a new data frame with 4 scale scores of the HSQ removed
+```{r}
+K2 <- dplyr::select(K1, 1:32,37:39)
+
+#Then scale and center data for easier interpretation 
+# Center to close to 0/ the mean
+K2 <- scale(K2, center = TRUE)
+
+K2<- as.data.frame(K2)
+```
+
+#Now run the PCA on the new data frame
+```{r}
+pca <- prcomp(K2, scale = TRUE)
+
+#Summary of the variance of PCA
+pca$sdev
+pca$sdev^2
+summary(pca)
+plot(pca, type = "lines")
+
+# Explanations: PC6-PC10 are explaning the least variance of all varaibles, and considered leaste meaningful
+```
+
+#pca transform all data into new datasets
+```{r}
+K3 <- as.data.frame(pca$x)
+
+#Attach the 4 variables scale scores of the HSQ  from your original data frame to pca respectively.
+Combined_aff <- cbind(K3, as.data.frame(K1$affiliative))
+Combined_enh <- cbind(K3, as.data.frame(K1$selfenhancing))
+Combined_agg <- cbind(K3, as.data.frame(K1$agressive))
+Combined_def <- cbind(K3, as.data.frame(K1$selfdefeating))
+``` 
+
+#Scatterplots and correlations between the transformed data and scale scores of the HSQ
+```{r}
+#for transformed datasets with affiliative results
+COR_aff <- cor(Combined_aff)
+
+corrplot(COR_aff, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=20, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Explanations: there is a  high negative correlation for PC1,PC2 and PC4 with affiliative result.
+```
+
+```{r}
+#for transformed datasets with selfenhancing results
+COR_enh <- cor(Combined_enh)
+
+corrplot(COR_enh, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=20, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#Explanations: there is a negative high correlation for PC1 and PC3, positive high correlation for PC5 with elfenhancing result.
+```
+
+```{r}
+#for transformed datasets with aggressive results
+COR_agg <- cor(Combined_agg)
+
+corrplot(COR_agg, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=20, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#Explanations: there is a positive high correlation between PC5 and PC6 with aggressive result.
+
+```
+
+```{r}
+#for transformed datasets with selfdefeating results
+COR_def <- cor(Combined_def)
+
+corrplot(COR_def, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=20, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#Explanations: there is a positive high correlation between PC2,and negative high correlation for PC1 and PC3 with selfdefeating result.
+```
+
+
+#print out the eigenvectors (often called loadings) for the components generated:
+```{r}
+pca$rotation
+loadings <- abs(pca$rotation) 
+table <- sweep(loadings, 2, colSums(loadings),"/") 
+
+#From table: 
+#PC1 is weighted mostly by Q1, Q5, Q17 and Q26;
+#PC2 is relied mostly on Q7, Q8 and Q20;
+#PC3 is composited mostly with Q4, Q7, Q23, Q24, and Q32;
+#PC4 is ... with Q10,Q17,and Q30;
+#PC5 is ... with age and Q22;
+#PC6 is ... with Q5,Q11 age and gender;
+# and so on ...
+```
+
+#generate a biplot to plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+```{r}
+biplot(pca) ##?
+
+#Interpretation:In the preceding image, known as a biplot, we can see the two principal components (PC1 and PC2) of the crimtab dataset. The red arrows represent the loading vectors, which represent how the feature space varies along the principal component vectors.
+
+#From the plot, we can see that the first groups of principal component vector, PC1 more or less places equal weight on features: Q7,Q11,Q15,Q16,Q23,Q31 This means that these three features are more correlated with each other to composite PC1 than the rest variables. <aggressive>
+
+#In the second principal component, PC2 places more weight on Q2,Q5,Q6,Q10,Q14,Q21,Q26 and Q30 than others. <selfenhancing>
+
+#Moreover, from the graph, Q9,Q1,Q17,and Q25 form another group of eigenvectors.<affiliative>
+
+#Lastly, there is a group composited with Q28,Q4,Q8,Q32,Q20 and Q12.<selfdefeating>
+```
+
+#Compring findings with existed outcomes of scale scores of the HSQ:
+```{r}
+#According to the humor_codebook.txt The four scale scores of the HSQ were calculated as such (php code):
+
+#affiliative. round(((6-$_POST['Q1']) + $_POST['Q5'] + (6-$_POST['Q9']) + $_POST['Q13'] + (6-$_POST['Q17']) + $_POST['Q21'] + (6-$_POST['Q25']) + (6-$_POST['Q29']))/8, 1);
+#selfenhancing. round(($_POST['Q2'] + $_POST['Q6'] + $_POST['Q10'] + $_POST['Q14'] + $_POST['Q18'] + $_POST['Q22'] + $_POST['Q26'] + $_POST['Q30'])/8,1);
+#aggressive. round(($_POST['Q3']+ $_POST['Q7'] + $_POST['Q11'] + $_POST['Q15'] + $_POST['Q19'] + $_POST['Q23'] + $_POST['Q27'] + $_POST['Q31'])/8,1);
+#selfdefeating. round(($_POST['Q4'] + $_POST['Q8'] + $_POST['Q12'] + $_POST['Q16'] + $_POST['Q20'] + $_POST['Q24'] + $_POST['Q28'] + $_POST['Q32'])/8,1);
+
+# This is actually the same as the above biplot shows.  Without grouping data with composite variables calculated, biasness occurred. However, it is still reasonable to interprete the results without composite variables, and its has shown clear the same interpretation corresponding to what have concluded by codebook .

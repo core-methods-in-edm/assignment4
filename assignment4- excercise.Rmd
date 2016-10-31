@@ -1,0 +1,197 @@
+---
+title: "Principle Component Aanalysis"
+output: html_document
+---
+#Data
+The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+#Start by uploading the data
+```{r}
+D1 <-  read.table ("Assistments-confidence.csv", sep = ",") 
+
+  #We won't need to id variable, so remove that.
+
+D1 <- dplyr::select(D1, 2:8)
+
+```
+
+#Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+
+install.packages("corrplot")
+
+library(corrplot)
+library(dplyr)
+
+#Rename columns for dataframe
+names(D1) <- c("prior_prob_count", "prior_percent_correct", "problems_attempted","mean_correct","mean_hint","mean_attempt","mean_confidence")
+
+# Remove the first row which contains column names not values 
+D1 <- dplyr::slice(D1, 2:343)
+
+#Need numeric "x" to operate cor function
+D1$prior_prob_count <- as.numeric(D1$prior_prob_count)
+D1$prior_percent_correct <- as.numeric(D1$prior_percent_correct)
+D1$problems_attempted <- as.numeric(D1$problems_attempted)
+D1$mean_correct <- as.numeric(D1$mean_correct)
+D1$mean_correct <- as.numeric(D1$mean_correct)
+D1$mean_hint <- as.numeric(D1$mean_hint)
+D1$mean_attempt <-as.numeric(D1$mean_attempt)
+D1$mean_confidence<- as.numeric(D1$mean_confidence)
+                                 
+#Generate pairwise correlations
+COR <- cor(D1)
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Study your correlogram image and save it, you will need it later
+#Interpretations - each number is corrlation multipled by 100
+
+```
+
+#Create a new data frame with the mean_correctvariables removed
+
+```{r}
+D2 <- dplyr::select(D1, 1:3,5:7)
+#remove the least variance as well- for thereasons that explained not much 
+
+#The, scale and center your data for easier interpretation 
+# Center to close to 0/ the mean
+D2 <- scale(D2, center = TRUE)
+```
+
+#Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+#Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca)
+#Note! proportion of variance (is proportion, and add all to 1)in summary is not equal to actual variance computed above
+
+#We can lot this to get an idea of which components we should keep and which we should drop
+
+plot(pca, type = "lines")
+##since pca provided with the maximum of varaition of all variables in some ways(we don't know) and projected in multi-dimensional coordination. The plot here represents all projections, and pc6 is the least variation contains all varaibles. Which means, least representative, as the following correlation will show that: the least projection still counts to some correlation, really wastes of total correlation . (so thinking about dropping down PC6, eventhough we don't really do that)
+```
+
+#Think about which components you would drop and make a decision
+#remove the least variance as well- for thereasons that explained not much (#6,mean_confidence)
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.
+#pca transform all data into new datasets
+D3 <- as.data.frame(pca$x)
+
+#Attach the variable "mean_correct" from your original data frame to D3.
+
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+#data.frame/as.data.frame/cbind can all be used for combine columns
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+
+COR2 <- cor(D4) 
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+###Interpretation: Transformed data include all columns except mean_correctvariables, and adds on original data of mean_correct; we can see a high correlation between PC1 and mean-correct, which consider PC1 as the most meaningful to explain the relationship between compositions of PC1 towards mean_correct. The least projection pc6 still counts to some correlations, which really wastes of total correlations for other PCs with mean-correct.
+
+```
+
+#print out the eigenvectors (often called loadings) for the components you generated:
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+#eigenvectors are propotional to those projection. All eigenvalue and eigenvectors for different variables composite together (in some way automatically) to form up a projection in multi-dimensional coornination.
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+table1 <- sweep(loadings, 2, colSums(loadings),"/") 
+#sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+```
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+```{r}
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca)
+#Interpretation:In the preceding image, known as a biplot, we can see the two principal components (PC1 and PC2) of the crimtab dataset. The red arrows represent the loading vectors, which represent how the feature space varies along the principal component vectors.
+#From the plot, we can see that the first principal component vector, PC1, more or less places equal weight on three features: problems_attemp & mean_confidence. This means that these three features are more correlated with each other than the rests variables.
+#In the second principal component, PC2 places more weight on mean_hints &mean_atemp than the 3 features which are less correlated with them. 
+```
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+```{r}
+#composite variables :enlarge the effects of eigenvectors towards composition of projection 
+#from each PC, varaibles contribute different weights toward each PC, so create new name for the most weights with expression.
+
+D2 <- as.data.frame(D2)
+###store in a varaible added automatically to D2
+D2$Persistence <- (D2$prior_prob_count *0.02346643)+(D2$prior_percent_correct*0.18654306)+(D2$problems_attempted*0.09963448)+(D2$mean_hint*0.31489715)+(D2$mean_attempt*0.31314664)+(D2$mean_confidence*0.06231224)
+
+D2$ProblemsUnderstand <- (D2$prior_percent_correct*0.003976708)+(D2$prior_percent_correct*0.016452382)+(D2$problems_attempted*0.376584209)+(D2$mean_hint*0.163987876)+(D2$mean_attempt*0.043179730)+(D2$mean_confidence*0.395819095)
+
+D2$probcount <- (D2$prior_prob_count*0.53261479)+(D2$prior_percent_correct*0.04794137)+(D2$problems_attempted*0.18321852)+(D2$mean_hint*0.02425319)+(D2$mean_attempt* 0.03639153)+(D2$mean_confidence* 0.17558059)
+
+D2$confidence <- (D2$prior_prob_count*0.17718963)+(D2$prior_percent_correct*0.20244021)+(D2$problems_attempted*0.21590171)+(D2$mean_hint*0.07862138)+(D2$mean_attempt*0.07324022)+(D2$mean_confidence*0.25260685)
+
+D2$correction <- (D2$prior_prob_count* 0.07160263)+ (D2$prior_percent_correct* 0.38945695)+(D2$problems_attempted* 0.20064401)+(D2$mean_hint* 0.02158017)+(D2$mean_attempt* 0.17024218)+(D2$mean_confidence*  0.14647407)
+
+D2$hints <- (D2$prior_prob_count*0.05431036)
+ +(D2$prior_percent_correct * 0.09114058)+ (D2$problems_attempted *0.09174208)+(D2$mean_hint*0.37176236)+(D2$mean_attempt *0.35915325)+(D2$mean_confidence *0.03189138)
+```
+
+## Now creating new algorithm for composite variables 
+```{r}
+###select only new varaibles for new dataframe D3
+D3 <- dplyr::select(D2, 7:12)
+
+###combined with mean_correct data
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+### reveal the correlation between new composite variables and mean_correct
+COR3 <- cor(D4)
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Explainations: new variables are created based  on original datasets' wegihts (eigenvectors) contribute to each PC, which means, origianl varaibles have varied importance to each projection. And we tried to see the correlation between new varaibles (under composition to each PC) and mean_correct.
+
+# What can be concluded from the corrplot is that mean_correct is negative correlated (-29%) with persistence (weigheted in largest by mean_hint &mean_attemp). This can be expained as the better correction, the less needed in persistence for keeping trying. 
+
+#Second, there is a 30% positive corrlation between based_correction(composited mostly by prior_percent_correct) and mean_correct; which can be explanined as if students doing well in previous works, they are considered to continue their success in their future studies.
+
+#Third, there is a 22% positive corrlation between confidence and mean_correct. Confidence is composed with mean_confidence and problems_attemp. Thus, if students try more times with increased confidence, there is a positive result for their correctness. 
+```
