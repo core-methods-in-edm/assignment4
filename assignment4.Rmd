@@ -11,7 +11,6 @@ output: html_document
 ---
 #Data
 The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
->>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 
 - id
 - prior_prob_count: How many problems a student has answered in the system prior to this session
@@ -24,7 +23,6 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
-<<<<<<< HEAD
 #setwd("C:/Users/Magdalena Bennett/Dropbox/PhD Columbia/Fall 2016/Core Methods in EDM/assignment4")
 
 D1 <- read.csv("Assistments-confidence.csv")
@@ -33,13 +31,6 @@ names(D1)
 #We remove the ID, because we are not going to use it.
 D1 <- D1[,-1]
 names(D1)
-=======
-D1 <- 
-
-  #We won't need to id variable, so remove that.
-
-
->>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 ```
 
 #Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
@@ -56,8 +47,6 @@ corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
-
-<<<<<<< HEAD
 ```
 
 - The diagonal of the correlation plot, shows that there is a 100\% correlation between a variable and itself (which is fairly obvious). The size of the circles (and the intensity of the color) will graphically show us the magnitude of the correlation, while the color of the circle will show us whether the correlation is positive (blueish) or negative (redish). In this case, we can observe that *mean_hint* has a strong negative correlation to *mean_correct*, and a slight negative correlation with *prior_percent_correct*. The variable *mean_hint* also seems to be slighlty positively correlated to *median_attempt*, *problems_attempted*, and *prior_prob_count*. Additionally, *mean_attempt* is positively correlated with *prior_percent_correct* and *problems_attempted*. Other variables do nos seem to be significantly correlated.
@@ -68,16 +57,12 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 D2 <- D1[,-which(names(D1)=="mean_correct")]
 
 names(D2)
-=======
-#Study your correlogram image and save it, you will need it later
+
 ```
 
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
->>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
-
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
 ```
@@ -86,11 +71,6 @@ D2 <- scale(D2, center = TRUE)
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
-<<<<<<< HEAD
-
-pca
-=======
->>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 ```
 
 #Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -109,7 +89,6 @@ summary(pca)
 #We can lot this to get an idea of which components we should keep and which we should drop
 
 plot(pca, type = "lines")
-<<<<<<< HEAD
 
 #We can also get the cummulative variation that they explain:
 
@@ -122,8 +101,6 @@ plot(cv, xlab="Principal Component", ylab="Proportion of Variance Explained", yl
 #Cummulative percentage of variation each component explains
 plot(cumsum(cv), xlab="Principal Component", ylab="Cumulative Proportion of Variance Explained", ylim=c(0,1),type='b')
 
-=======
->>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
 ```
 
 #Think about which components you would drop and make a decision
@@ -139,7 +116,6 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-<<<<<<< HEAD
 COR2 <- cor(D4)
   
 corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
@@ -173,11 +149,62 @@ plot(cumsum(cv), xlab="Principal Component", ylab="Cumulative Proportion of Vari
 
 - Adding one more component (even though it is not directly comparable to using 6 components) appears not to make much difference, as the seventh PC explains very little of the variance. This would support our idea that we would not lose much information by not including *mean_correct*
 
-- I assumed theat *mean_correct* ws just another characteristic, but if it is the outcome that we are interested in, then the same logic applies. Dropping the last PC because it explains little variance would probably be a mistake, as it is strongly correlated with the outcome of interest.
-=======
-COR2 <- 
+- I assumed theat mean_correct ws just another characteristic, but if it is the outcome that we are interested in, then the same logic applies. Dropping the last PC because it explains little variance would probably be a mistake, as it is strongly correlated with the outcome of interest.
 
-  
+#Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+#sweep(loadings, 2, colSums(aload), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+sweep(loadings, 2, colSums(loadings), "/")
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+par(mar = c(5,4,3,3) + .1, las = 1, cex = 0.8)
+
+biplot(pca)
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
 ```
 
->>>>>>> 39230c1baedf4756064ad6fa06db98bdc88ffd2f
+- We can see that the first principal component weights *mean_hint*, *mean_attempt*, and *problems_attempted* more heavily.This could potentially be a component that captures the overall "effort" of the student during the test, including the outside help (hints).
+
+- The second PC weights heavily on *prior_percent_correct*, so it's a component that captures the previous success of the student.
+
+- The third PC is weights more on *mean_confidence*, so this component reflects how confident the student is on their answers.
+
+- The fourth PC weights more the prior number of problems the student did and also their confidence. This component probably reflects the effort of the student prior to the test.
+
+- The fifth PC weights *mean_attemtp* and *problems_attempted*, which is similar to the first one, but does not consider the number of hints in this case, so it's like a "thanks for trying" component.
+
+- Finally, the sixth PC seems to sort of weight all the variables (except *mean_confidence*), and more heavily *mean_hint*. So it could be a measure of "outside help".
+
+#Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+#Load the data
+humor <- read.csv("humor_data.csv")
+
+#First, we will extract only the questions
+d_humor <- humor[,-(33:39)]
+
+#Now, we want to see if we can recreate the 4 dimensions they captured:
+#We are also going to use PCAproj() function to make it robust to outliers
+library("pcaPP")
+
+#We also scale it and center it:
+pcah <- PCAproj(d_humor, scale = sd, center = mean, k=4)
+
+pcah
+
+pcah$loadings
+
+```
