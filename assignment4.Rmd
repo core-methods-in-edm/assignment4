@@ -47,7 +47,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 D2 <- dplyr::select(D1, -mean_correct)
 
 #Then, scale and center your data for easier interpretation
-D2 <- scale(D2, center = TRUE) #[center = true] makes all values of different variables distrubute around the same center value after being scaled.
+D2 <- scale(D2, center = TRUE) #"center = true" makes all values of different variables distrubute around the same center value after being scaled.
 ```
 
 #Now run the PCA on the new data frame
@@ -95,3 +95,75 @@ corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",
 plot(COR2)
 ```
 From the plot, we can tell that PC6 significantly correlates with mean_correct (corr=-0.39), so we should not omit PC6 although its influence on the variances is very small. It reveals a weakness of the PCA that we do not take the dependent variable into account when we consider which features to drop.
+
+#Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+```
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+PC1 is more negatively relevant to "mean_hint", "mean_attempt", and "problems_attempted" than the other variables, which means that PC1 represents a student's uncertainty of a question, therefore I will name it "certainty".
+PC2 is more positively relevant to "prior_percent_correc", "prior_prob_count", and "problems_attempted", which means that PC2 represents a student's performance hitherto, therefore I will name it "prior_performance". 
+PC3 is more negatively relevant to "mean_confidence" and "prior_prob_count", and positively to "problems_attempted", which means that PC3 represents a student's sense of frustration, therefore I will name it "frustration".
+PC4 is more negatively relevant to "prior_prob_count" and positively to "mean_confidence", which means that PC4 represents a student's sense of self-efficiency, therefore I will name it "self_efficiency".
+PC5 is more positively relevant to "mean_attempt" and negatively to "problems_attempted", which means that PC5 represents a student's perseverance of answering a question, I will name it "perseverance".
+PC6 is more positively relevant to "mean_hint" and "prior_percent_correct", which means that PC6 represents the effectiveness of scaffolding for a student, therefore I will name it "eff_scaff".
+```{r}
+D5 <- as.data.frame(pca$rotation)
+names(D5) <- c("certainty", "prior_performance", "frustration", "self_efficiency", "perseverance", "eff_scaff")
+D6 <- dplyr::select(D5, certainty, prior_performance, self_efficiency, eff_scaff) #select variables that highly correlate to "mean_correct" shown in the last correlogram for COR2. 
+```
+
+
+```{r}
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together", Variables that possibly represent the same underlying construct point in the same direction.
+
+biplot(pca)
+```
+
+```{r}
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+D7 <- as.matrix(D2)
+D8 <- as.matrix(D6)
+D9 <- D7%*%D8
+D10 <- cbind(as.data.frame(D9), as.data.frame(D1$mean_correct))
+COR3 <- cor(D10)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+```
+
+#Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+H1 <- read.table("~/Career/TC/Courses/Core Methods in EDM/assignment4/humor_data.csv", sep = ",", header = TRUE)
+```
+In the dataframe H1, we can see that the original analysts have already calculated 32 variables into 4 new ones by calculating the average of questions for the same feature. But now I will try to reduce the number of variables in another way, i.e. PCA.
+
+```{r}
+H2 <- dplyr::select(H1, 1:32) #select the 32 questions
+
+H3 <- H2[H2$Q1!=-1 & H2$Q2!=-1 & H2$Q3!=-1 & H2$Q4!=-1 & H2$Q5!=-1 & H2$Q6!=-1 & H2$Q7!=-1 & H2$Q8!=-1 & H2$Q9!=-1 & H2$Q10!=-1 & H2$Q11!=-1 & H2$Q12!=-1 & H2$Q13!=-1 & H2$Q14!=-1 & H2$Q15!=-1 & H2$Q16!=-1 & H2$Q17!=-1 & H2$Q18!=-1 & H2$Q19!=-1 & H2$Q20!=-1 & H2$Q21!=-1 & H2$Q22!=-1 & H2$Q23!=-1 & H2$Q24!=-1 & H2$Q25!=-1 & H2$Q26!=-1 & H2$Q27!=-1 & H2$Q28!=-1 & H2$Q29!=-1 & H2$Q30!=-1 & H2$Q31!=-1 & H2$Q32!=-1, ] #omit incomplete answers
+
+H3 <- scale(H2, center = TRUE) #standardize H2
+
+pca2 <- prcomp(H3, scale = TRUE) #perform pca
+
+plot(pca2, type = "lines") #show variances of new variables 
+```
+The plot shows that contributions to variances tend to be low from PC6 to PC10, so maybe we can drop them to reduce the number of new variables.
+
+```{r}
+H4 <- as.data.frame(pca2$x) #pca2$x means new values of all rows on 10 new axes.
+
+H5 <- dplyr::select(H4, 1:6)
+
+pca2$rotation #We can give new meanings to those six new variables according to it.
+```
