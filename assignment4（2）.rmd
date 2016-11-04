@@ -1,0 +1,161 @@
+---
+title: "Principle Component Aanalysis"
+output: html_document
+---
+#Data
+The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+#Start by uploading the data
+```{r}
+D1 <- read.table("Assistments-confidence.csv",header=TRUE, sep=",")
+
+  #We won't need to id variable, so remove that.
+library(dplyr)
+D1 <- dplyr::select(D1, 2:8)
+
+```
+
+#Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+D1 <- dplyr::select(D1, 2:8)
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+
+library(corrplot)
+
+#Generate pairwise correlations
+COR <- cor(D1)
+#correlation plot of each of the variables
+#LOOK AT https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html FOR MORE INFORMATION
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Study your correlogram image and save it, you will need it later
+```
+
+#Create a new data frame with the mean_correct variables removed
+
+```{r}
+D2 <- dplyr::select(D1, -mean_correct)
+
+#The, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+```
+
+#Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+#Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca)
+
+#We can lot this to get an idea of which components we should keep and which we should drop
+#we usually droped the data contributes the least variance which is PC6. 
+
+plot(pca, type = "lines")
+```
+
+#Think about which components you would drop and make a decision
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.
+#PCA$x is the D1*eigenvectors=PCA s?
+#see#http://setosa.io/ev/principal-component-analysis/
+
+D3 <- as.data.frame(pca$x)
+
+#Attach the variable "mean_correct" from your original data frame to D3. (pca x)
+
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+# if we had dropped pc6 we will now find out that pc6 is actually highly correlated to our predictor. thus it should be important
+
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+D4 <- scale(D4, center = TRUE)
+ 
+pca2 <- prcomp(D4, scale = TRUE)
+ 
+ plot(pca2, type = "lines")
+  
+```
+#Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+D5 <- as.data.frame(sweep(loadings, 2, colSums(loadings),"/"))
+names(D5)<-c("perserverence","smartness","selfrecognition","priorexperience","try","uncertain_abt_answer")
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca)
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+#I think there is no need to calculate. What we want to calculate is the transformed data which is PCA$x isn't it? pca$x=original data %*% eigenvectors
+perserverence<- 0.124231133802369*D2$prior_prob_count+0.0803595580597633*D2$prior_percent_correct+0.217447373356448*D2$problems_attempted+0.302237796251017*D2$mean_hint+0.258634577853408*D2$mean_attempt+0.0170895606769939*D2$mean_confidence
+#i found this new composite variables is different from pca$x. because it equals original data %*% sweep...( so im confused here, what exactly does) 
+
+#Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+#upload the data
+C1 <- read.table("humor_data.csv",header=TRUE, sep=",")
+C2 = dplyr::filter(C1, Q1!= -1, Q2!= -1,Q3!= -1,Q4!= -1,Q5!= -1,Q6!= -1,Q7!= -1,Q8!= -1,Q9!= -1,Q10!= -1,Q11!= -1,Q12!= -1,Q13!= -1,Q14!= -1,Q15!= -1,Q16!= -1,Q17!= -1,Q18!= -1,Q19!= -1,Q20!= -1,Q21!= -1,Q22!= -1,Q23!= -1,Q24!= -1,Q25!= -1,Q26!= -1,Q27!= -1,Q28!= -1,Q29!= -1,Q30!= -1, Q31!= -1,Q32!= -1)
+C3<- dplyr::select(C2, 1:32)
+ COR4 <- cor(C3)
+ #Plotting the correlation
+ corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper",        
++          tl.col="black", tl.cex=0.5, tl.srt=30, 
++          addCoef.col="black", addCoefasPercent = TRUE,
++          sig.level=0.50, insig = "blank")
+#scale the question answers
+ C4 <- scale(C3, center = TRUE)
+#run the principal components analysis
+pca3 <- prcomp(C4, scale = TRUE)
+summary(pca3)
+#plot out the variance of the new variables 
+#and we observed a reduce in the number of the variables. That is because the variance is expressed out in the first 10 axis, there is no new axis perpendicular to the older one yet have unzero variance
+ plot(pca3, type = "lines")
+#examine the eigenvectors
+ pca3$rotation
+ loadings2 <- abs(pca3$rotation) #abs() will make all eigenvectors positive
+
+sweep(loadings2, 2, colSums(loadings), "/") 
+#through this table, we will be able to see how each new variable is composed of the old variables then interpret the meanings of each new variables.
+C5<-as.data.frame(pca3$x)
+#it seems like the 8th 9th and 10th contribute less to the variables 
+C6<-dplyr::select(C5,1:7)
