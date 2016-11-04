@@ -159,3 +159,6 @@ sweep(loadings2, 2, colSums(loadings), "/")
 C5<-as.data.frame(pca3$x)
 #it seems like the 8th 9th and 10th contribute less to the variables 
 C6<-dplyr::select(C5,1:7)
+#Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca3)
