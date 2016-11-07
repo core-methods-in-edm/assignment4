@@ -1,5 +1,4 @@
 ---
-<<<<<<< HEAD
 title: "Principle Component Analysis"
 output: html_document
 ---
@@ -197,14 +196,13 @@ humor <- read.csv("humor_data.csv")
 d_humor <- humor[,-(33:39)]
 
 #Now, we want to see if we can recreate the 4 dimensions they captured:
-#We are also going to use PCAproj() function to make it robust to outliers
-library("pcaPP")
 
 #We also scale it and center it:
-pcah <- PCAproj(d_humor, scale = sd, center = mean, k=4)
+pcah <- prcomp(d_humor, scale. = TRUE)
 
 pcah
 
-pcah$loadings
+biplot(pcah)
 
 ```
+- In the biplot, we can clearly see that the questions take clearly four directions, that could be associated to the "types of humor" that the researchers are talking about.
