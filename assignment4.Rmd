@@ -86,8 +86,9 @@ D3 <- as.data.frame(pca$x)
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+#Yes - componenet 6 does not have a substantial variance according to the PCA chart, but it does have a negative correlation with mean_correct (-.39). By dropping this variable we are losing a potentially meaningful relationship. 
 
-COR2 <- 
+COR2 <- cor(D4)
 
 ```
 #Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -102,6 +103,12 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+# PC1: Student expertise (-.63 mean hint -.54 mean attempt) 
+#PC2 Student expertise (.816 prior % correct)
+#PC3 student insecurity (-.83 mean confidence)
+# PC4 Student experience (-.69 prior probability count)
+#PC5 Content newbie (-.59 problems attempted .69 mean attempt)
+#PC6 hints (.74 mean hints)
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
@@ -112,3 +119,41 @@ biplot(pca)
 ```
 
 #Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+
+```{r}
+humor<-read.csv("humor_data.csv")
+HUMORCOR <- cor(humor)
+View(HUMORCOR)
+corrplot(HUMORCOR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+
+humor2 <- scale(humor, center = TRUE)
+pca <- prcomp(humor2, scale = TRUE)
+plot(pca, type = "lines")
+H3<-as.data.frame(pca$x)
+COR2 <- cor(H3)
+loadings <- abs(pca$rotation)
+View(COR2)
+H5<-subset(H3,select=c(PC1,PC2,PC3,PC4,PC5,PC6))
+View(H5)
+CORHH<-cor(H5)
+View(CORHH)
+loadings <- abs(pca$rotation)
+sweep(loadings, 2, colSums(loadings), "/") 
+biplot(pca)
+pc<-cor(H5,humor)
+View(pc)
+
+```
+# Dislike humor during stressful times PC1: Q1 .55 Q2 -.53 Q5 -.59 Q6 -.528 Q10 -.58 Q13 -.55 Q14 -.59 Q17 .56 Q18 -.52 Q19 -.50 Q21 
+# -.55 Q25 .51 Q26  -.58 affiliative -.76 # self enchance -.73 self defect -.57  
+# Confidence/self worth PC2 Q4 -.57 Q8 -.58 Q20 -.66 Q24 -.54 Q32 -.53 self defect -.74 
+# Bully humor PC3 Q15 -.62 Q23 -.52 Q31 -.65 
+# PC4 not sure- no highly correlated variables 
+# Aggression PC5 .75 aggressive 
+# PC6 not sure- no highly correlated variables 
+
+
