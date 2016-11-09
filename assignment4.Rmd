@@ -147,13 +147,13 @@ biplot(pca)
 pc<-cor(H5,humor)
 View(pc)
 
-```
-# Dislike humor during stressful times PC1: Q1 .55 Q2 -.53 Q5 -.59 Q6 -.528 Q10 -.58 Q13 -.55 Q14 -.59 Q17 .56 Q18 -.52 Q19 -.50 Q21 
+#Dislike humor during stressful times PC1: Q1 .55 Q2 -.53 Q5 -.59 Q6 -.528 Q10 -.58 Q13 -.55 Q14 -.59 Q17 .56 Q18 -.52 Q19 -.50 Q21 
 # -.55 Q25 .51 Q26  -.58 affiliative -.76 # self enchance -.73 self defect -.57  
 # Confidence/self worth PC2 Q4 -.57 Q8 -.58 Q20 -.66 Q24 -.54 Q32 -.53 self defect -.74 
 # Bully humor PC3 Q15 -.62 Q23 -.52 Q31 -.65 
 # PC4 not sure- no highly correlated variables 
 # Aggression PC5 .75 aggressive 
 # PC6 not sure- no highly correlated variables 
+```
 
 
