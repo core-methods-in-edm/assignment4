@@ -3,8 +3,10 @@ title: "Principle Component Aanalysis"
 output: html_document
 ---
 #Data
-The data you will be using comes from teh Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+The data used in this assignment comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). 
+It describes students working through online math problems. 
 
+Each student has the following data associated with them:
 - id
 - prior_prob_count: How many problems a student has answered in the system prior to this session
 - prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
@@ -13,40 +15,49 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 - mean_hint: The average number of hints a student asked for in the current session
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
-
-#Start by uploading the data
+setwd()
 ```{r}
-D1 <- 
 
-  #We won't need to id variable, so remove that.
+install.packages(dplyr)
+install.packages("corrplot")
 
+```
 
+#Upload the data and remove the id variable since we dont need to use it.
+
+```{r}
+D <- read.csv("Assistments-confidence.csv")
+
+library(dplyr)
+D1 <- dplyr::select(D, 2:7)
 ```
 
 #Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
 
-```{r}
-#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
-library(corrplot)
-
+##Corrplotpackage is used to plot some pretty correlation matrices (sometimes called correlograms)
 #Generate pairwise correlations
-COR <- cor(D1)
+## name of the plot - Rplot1_1
 
-corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
-tl.col="black", tl.cex=0.6, tl.srt=45, 
-        addCoef.col="black", addCoefasPercent = TRUE,
-        sig.level=0.50, insig = "blank")
+```{r}
+library(corrplot) 
+COR <- cor(D1)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+```
+
+Interpretation - The darkest blue in the plot with a unit of 100 says 100 % positive corelation, since they are the same variables. The more red the plot states a negative corelation. 
 
 #Study your correlogram image and save it, you will need it later
-```
 
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+library(dplyr)
+D2 <- dplyr::select(D1, -mean_correct)
+```
 
 #The, scale and center your data for easier interpretation
+
+```{r}
 D2 <- scale(D2, center = TRUE)
 ```
 
@@ -60,35 +71,257 @@ pca <- prcomp(D2, scale = TRUE)
 
 ```{r}
 pca$sdev
+```
 
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
 
+```{r}
 pca$sdev^2
+```
 
 #A summary of our pca will give us the proportion of variance accounted for by each component
 
+```{r}
 summary(pca)
+```
 
-#We can lot this to get an idea of which components we should keep and which we should drop
+#We can plot this to get an idea of which components we should keep and which we should drop
+#name ofthe plot - Rplot1_2
 
+```{r}
 plot(pca, type = "lines")
 ```
 
-#Think about which components you would drop and make a decision
 
-```{r}
+Interpretation - Think about which components you would drop and make a decision - Component 5 looks least related if we look at this plot. So it may be an option while we are deciding to drop a variable.
+
 #Now, create a data frame of the transformed data from your pca.
 
+```{r}
 D3 <- as.data.frame(pca$x)
+```
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
+```{r}
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
-
-#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
-
-COR2 <- 
-
-  
 ```
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct.
+#Plot is named - Rplot1_3
+#If you had dropped some components would you have lost important infomation about mean_correct?
+## yes, if we had dropped the variable 5 we may have lost important information about mean correct since, pc5 has a slightly strong positive corelation with mean correct
+
+```{r}
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+```
+Interpretation: This graph shows that dropping pc5 is not a good option, since it is highly positively related, but if we go back to the 2nd plot and 3rd plot together - PC4 may be our next option to check for since it is less related to othervariables.
+
+
+#Goal of this assignment till now-
+ - We have 6 related variables
+ - Remove 1 variable - mean correct 
+ - make it sort of unrelated, while the rest 5 are still related variables
+ - check the corelation now by adding this unrelated variable back with the set of related variables
+ 
+#Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+```
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+##abs() will make all eigenvectors positive
+##sweep() computes each row as a proportion of the column.
+
+```{r}
+loadings <- abs(pca$rotation)
+sweep(loadings, 2, colSums(loadings), "/")
+```
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction. 
+
+```{r}
+biplot(pca)
+```
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+
+
+
+
+
+PART 2
+
+#Data
+This data was collection with an interactive online version of the Humor Styles Questionnaire from
+
+Martin, R. A., Puhlik-Doris, P., Larsen, G., Gray, J., & Weir, K. (2003). Individual differences in uses of humor and their relation to psychological well-being: Development of the Humor Styles Questionnaire. Journal of Research in Personality, 37, 48-75.
+
+The variables Q1 through Q32 were statements rated on a five point scale where 1=Never or very rarely true, 2=Rarely true, 3= Sometimes true, 4= Often true, 5=Very often or always true (-1=did not select an answer). The exact statements were:
+
+Q1. I usually don?t laugh or joke around much with other people.
+Q2. If I am feeling depressed, I can usually cheer myself up with humor.
+Q3. If someone makes a mistake, I will often tease them about it.
+Q4. I let people laugh at me or make fun at my expense more than I should.
+Q5. I don?t have to work very hard at making other people laugh?I seem to be a naturally humorous person.
+Q6. Even when I?m by myself, I?m often amused by the absurdities of life.
+Q7. People are never offended or hurt by my sense of humor.
+Q8. I will often get carried away in putting myself down if it makes my family or friends laugh.
+Q9. I rarely make other people laugh by telling funny stories about myself.
+Q10. If I am feeling upset or unhappy I usually try to think of something funny about the situation to make myself feel better.
+Q11. When telling jokes or saying funny things, I am usually not very concerned about how other people are taking it.
+Q12. I often try to make people like or accept me more by saying something funny about my own weaknesses, blunders, or faults.
+Q13. I laugh and joke a lot with my closest friends.
+Q14. My humorous outlook on life keeps me from getting overly upset or depressed about things.
+Q15. I do not like it when people use humor as a way of criticizing or putting someone down.
+Q16. I don?t often say funny things to put myself down.
+Q17. I usually don?t like to tell jokes or amuse people.
+Q18. If I?m by myself and I?m feeling unhappy, I make an effort to think of something funny to cheer myself up.
+Q19. Sometimes I think of something that is so funny that I can?t stop myself from saying it, even if it is not appropriate for the situation.
+Q20. I often go overboard in putting myself down when I am making jokes or trying to be funny.
+Q21. I enjoy making people laugh.
+Q22. If I am feeling sad or upset, I usually lose my sense of humor.
+Q23. I never participate in laughing at others even if all my friends are doing it.
+Q24. When I am with friends or family, I often seem to be the one that other people make fun of or joke about.
+Q25. I don?t often joke around with my friends.
+Q26. It is my experience that thinking about some amusing aspect of a situation is often a very effective way of coping with problems.
+Q27. If I don?t like someone, I often use humor or teasing to put them down.
+Q28. If I am having problems or feeling unhappy, I often cover it up by joking around, so that even my closest friends don?t know how I really feel.
+Q29. I usually can?t think of witty things to say when I?m with other people.
+Q30. I don?t need to be with other people to feel amused ? I can usually find things to laugh about even when I?m by myself.
+Q31. Even if something is really funny to me, I will not laugh or joke about it if someone will be offended.
+Q32. Letting others laugh at me is my way of keeping my friends and family in good spirits.
+
+On the next page test takers were prompted for three more variables:
+
+age. entered as as text then parsed to an interger.
+gender. chosen from drop down list (1=male, 2=female, 3=other)
+accuracy. How accurate they thought their answers were on a scale from 0 to 100, answers were entered as text and parsed to an integer. They were instructed to enter a 0 if they did not want to be included in research.	
+
+
+
+
+
+
+
+Upload the data
+```{r}
+M <- read.table("humor_data.csv", header = TRUE, sep = ",")
+```
+
+See the corelation graph
+```{r}
+COR3 <- cor(M)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+#Rplot2_1
+```
+
+Think of the variables you can drop - accuracy and aggresive
+
+Create a new data frame with the accuracy and aggresive variables removed
+
+```{r}
+library(dplyr)
+M1 <- dplyr::select(M, -accuracy, -agressive)
+```
+
+The, scale and center your data for easier interpretation
+
+```{r}
+M1 <- scale(M1, center = TRUE)
+```
+
+Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(M1, scale = TRUE)
+```
+
+Although the algorithm does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+pca$sdev
+```
+
+To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+```{r}
+pca$sdev^2
+```
+
+A summary of our pca will give us the proportion of variance accounted for by each component
+
+```{r}
+summary(pca)
+```
+
+We can plot this to get an idea of which components we should keep and which we should drop - and it looks like dropping PC37 or PC36 can be good option
+name ofthe plot - Rplot2_2
+
+```{r}
+plot(pca, type = "lines")
+```
+
+
+
+
+Now, create a data frame of the transformed data from your pca.
+
+```{r}
+M2 <- as.data.frame(pca$x)
+```
+
+
+
+
+
+
+
+#Check If dropping variable agressive is a good option
+
+```{r}
+M3 <- cbind(M2, as.data.frame(M$accuracy))
+```
+
+Generate a correlation plot
+
+```{r}
+COR4 <- cor(M3)
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+```
+Rplot2_3
+
+Hence our interpretation of dropping the variable accuracy from the data set was right since,it is not much related most of the other variables and the highest relation it shows is -17 with PC1 which can be dropped.
+
+
+
+
+
+
+#Check If dropping variable agressive is a good option
+
+```{r}
+M4 <- cbind(M2, as.data.frame(M$agressive))
+```
+
+Generate a correlation plot
+
+```{r}
+COR5 <- cor(M4)
+corrplot(COR5, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+```
+
+Rplot2_4 shows that dropping the agressive variable will not be a good option since it highly corelated with many of the variables and we may loose some of the important information.
+
+
+
+
+
+
+
 
