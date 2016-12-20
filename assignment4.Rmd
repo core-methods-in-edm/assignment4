@@ -22,6 +22,7 @@ setwd("~/Documents/EDM2016/assignment4")
 D1 <- read.csv("Assistments-confidence.csv", sep = ",", header = T)
 
 #We won't need the id variable, so remove that.
+
 D1 <- D1[,-1]
 ```
 
@@ -33,6 +34,7 @@ library(corrplot)
 library(dplyr)
 library(tidyr)
 library(lattice)
+
 #Generate pairwise correlations
 COR <- cor(D1)
 
@@ -108,6 +110,7 @@ corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
+
 #We mentioned that we might drop PC6 or take a more aggresive approach, keep only PC1 and PC2, to obtain efficiency. According to this correlation plot, we see that PC1 and PC2 are strongly and positively correlated with mean_correct. Dropping PC3 and PC5 are reasonable since the correlation is small. PC4 has a small yet substantial positive correlation with mean_correct so dropping it may result in some loss of information. Most importantly, PC6 has a strong negative correlation with mean_correct. Dropping this variable would result in a huge loss of information.
   
 ##notes: Above, we demonstrated that the selection method of PCA (dropping some of the PCs) may result a loss of information. In the case when we have two or more highly correlated variables, we may use the extraction method (combining the PCs) in PCA to retain as much information as possible. See the next steps for detail.
