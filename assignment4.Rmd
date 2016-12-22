@@ -16,11 +16,12 @@ The data you will be using comes from teh Assistments online intelligent tutorin
 
 #Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("Assistments-confidence.csv")
 
-  #We won't need to id variable, so remove that.
+#We won't need to id variable, so remove that.
+D1 <- subset(D1, select=-id)
 
-
+View(D1)
 ```
 
 #Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
@@ -36,7 +37,7 @@ COR <- cor(D1)
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
-        sig.level=0.50, insig = "blank")
+        sig.level=.05, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
 ```
@@ -44,7 +45,8 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 #Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- subset(D1, select=-mean_correct)
+
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -80,6 +82,7 @@ plot(pca, type = "lines")
 #Now, create a data frame of the transformed data from your pca.
 
 D3 <- as.data.frame(pca$x)
+View(D3)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -87,8 +90,110 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+library(corrplot)
+
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
   
 ```
+#Now print out the eigenvectors (often called loadings) for the components you generated:
 
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+#
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca,cex=c(1/2, 1))
+#Trying to make this graph a bit more readable, cex helps to control the size of points
+biplot(pca,cex=c(1/2, 1))
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+#composite1(PC1) = (V1 x E1) + (V2 x E2) + (V3 x E3) + (V4 x E4)
+
+```
+
+#Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+H1 <- read.csv("humor_data.csv")
+View(H1)
+
+#Remove the observations in the last columns of the dataset.
+
+H2 <- H1[1:32]
+View(H2)
+
+CORH <- cor(H2)
+
+corrplot(CORH, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=.05, insig = "blank")
+
+#scales and centers the data
+H3 <- scale(H2, center = TRUE)
+View(H3)
+
+pcah <- prcomp(H3, scale = TRUE)
+
+pcah$sdev
+
+pcah$sdev^2
+
+summary(pcah)
+
+plot(pcah, type = "lines")
+#it looks like PC's past 6 can be dropped, the 'boot' shape seems to be leveling off at this point
+
+H4 <- as.data.frame(pcah$x)
+View(H4)
+
+H5 <- subset(H4, select=c(1:6))
+View(H5)
+
+CORH <- cor(H5)
+
+corrplot(CORH, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Add back affiliative, selfenhancing, selfdefeating, and aggressive
+H6 <- cbind(H5, as.data.frame(H1[,33:36]))
+View(H6)
+
+#Scale the new dataset with new columns
+H7 <- scale(H6, center = TRUE)
+View(H7)
+
+CORH2 <- cor(H7)
+
+corrplot(CORH2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+pcah2 <- prcomp(H7, scale = TRUE)
+
+pcah2$sdev
+
+pcah2$sdev^2
+
+summary(pcah2)
+
+```
