@@ -1,0 +1,126 @@
+---
+title: "assignment4_v0.3"
+author: "Melanie Nethercott"
+date: "16/11/2017"
+output: html_document
+
+
+## Data
+The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+## Start by uploading the data
+```{r}
+library ("dplyr")
+library ("tidyr")
+
+D1 <- read.csv ("Assistments-confidence.csv", sep = ",", header = TRUE) 
+D1 <- select (D1,-id)
+```
+
+## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+install.packages ("corrplot")
+library(corrplot)
+
+#Generate pairwise correlations
+COR <- cor(D1)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Study your correlogram image and save it, you will need it later 
+save.image(corrplot, file= "Users/melanienethercott/Dropbox/Teachers College/HUDK 4050 EDM/R work/assignment4_v0.1") 
+```
+
+## Create a new data frame with the mean_correct variables removed
+```{r}
+D2 <- select (D1, -mean_correct)
+
+#Then, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+```
+
+## Now run the PCA on the new data frame
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+```{r}
+pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+summary(pca)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+plot(pca, type = "lines")
+```
+
+## Think about which components you would drop and make a decision
+I would keep component one because it contains the highest variance of all the components, which we want. I would also keep components two and three because even though they caintain less variance than component one, they contain more than components four to six. Also, the line levels out somewhat on these points on the scree plot, showing the amount of variance maintained in each subsequent components decreases more steadily, meaning these components explain less and less variance.
+
+## Part II
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.NB-this contains the eigenvalues for each student for each component (i.e. data point)
+D3 <- as.data.frame(pca$x)
+
+#Attach the variable "mean_correct" from your original data frame to D3. 
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. 
+library (ggplot2)
+
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent=TRUE, sig.level=0.50, insig="blank")
+
+plot(D4) #I really don't understand the scatterplots produced by this- there is so much going on. Is this the right way to plot this, or is there a better/ clearer way?
+
+```
+
+## If you had dropped some components would you have lost important infomation about mean_correct?
+In looking at the corrplot, although component four and six accounts for much less variance than the other components, we see they are correlations to mean_correct. Component six is somewhat strongly negatively correlated and component four is very weakly positively correlated to mean_correct. If I dropped these components,I would have potentially be throwing out this important data. The only thing I can interpret from the scatterplots is that there are no components which have perfect correlations which is good because we don't want that because the emphasis here is on variance and unrealted characteristics (is that right?)
+
+
+## Now print out the eigenvectors (often called loadings) for the components you generated:
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+#sweep() computes each row as a proportion of the column. 
+sweep(loadings, 2, colSums(loadings), "/") 
+```
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+In component one, the mean_hint, mean_attempt, and problems_attempted make up almost two thirds of the datapoints (or is that variance?). I think that component one therefore represents attempt students' effort since how many problems you answer, attempt to answer, and ask for support in answering, could be proxies for how hard you are trying. Within component two, prior_percent_correct and prior_prob_count make up most of the variance (around 70%). I think that component two could therefore represent students' previous performance since how many questions you answered and what percent of these was correct is a measure of form of summative assessment. Mean_confidence, prior_prob_count and problems_attempted make up almost 90% of the variance in component three, so this component could represent students' confidence based on previous performance.
+
+
+```{r}
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+biplot(pca)
+
+#Calculate values for each student that represent your composite variables and then create a new correlogram showing their relationship to mean_correct.
+#I'm sorry- I don't understand this question or how to tackle it!
+```
+
+
+
+# Part III  
+## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
