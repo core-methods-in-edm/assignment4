@@ -1,0 +1,224 @@
+---
+title: "Principle Component Aanalysis"
+output: html_document
+---
+## Data
+The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+## Start by uploading the data
+```{r}
+D1 <- read.csv("Assistments-confidence.csv")
+
+  #We won't need the id variable, so remove that.
+
+```
+
+## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+#install.packages("corrplot")
+library(corrplot)
+
+#Generate pairwise correlations
+COR <- cor(D1)
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Study your correlogram image and save it, you will need it later
+
+#In the figure, correlations with p-value > 0.5 are considered as insignificant. In this case the correlation coefficient values are leaved blank.
+# “full” (default) : display full correlation matrix. “upper”: display upper triangular of the correlation matrix. “lower”: display lower triangular of the correlation matrix
+#tl.col (for text label color) and tl.srt (for text label string rotation) are used to change text colors and rotations.
+```
+
+number & color=correlation coeficient(e.g., 100=1, 31=0.31).
+As we can see, there exists highly positive correlation (0.8) between mean_confidence and mean_correct and highly negative correlation (-0.9) between mean_attempt and mean_correct.
+
+## Create a new data frame with the mean_correct variables removed
+
+```{r}
+D2 <- subset(D1, select = - mean_correct)
+
+#The, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+```
+
+## Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+
+plot(pca, type = "lines")
+```
+
+## Think about which components you would drop and make a decision
+
+The first principal component explains about 30.05% of the variation. Furthermore, the first four principal components explain 78.56%, while the first five principal components explain 89.02% of the variation. 
+
+In most cases, the required cut off is pre-specified; i.e. how much of the variation to be explained is pre-determined. For instance, I might state that I would be satisfied if I could explain 70% of the variation. If we do this then we would select the components necessary until you get up to 70% of the variation. This would be one approach. This type of judgment is arbitrary and also depends on the type of problem at hand.
+
+Also, in my opinion, the pca's line become flat when comes to the fourth component. Thus, it will make sense to choose first 4 components.
+
+Another way: check if eigenvalue >= 1, it could be included (meaning that it explains a dimension at least).
+
+## Part II
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.
+
+D3 <- as.data.frame(pca$x)
+
+#Attach the variable "mean_correct" from your original data frame to D3.
+
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+
+COR2 <- cor(D4)
+#e^-1 = 0.1, e^-3 = 0.001
+```
+
+purpose: get a sense of the correlation between pca & mean_correct 
+As we can see, mean_correct has higher correlation with PCA5 (0.943) & PCA7 (0.581).
+
+## Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+contribution_percent<- sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+contribution_percent
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca)
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+```
+
+Questions(see their contributions) under dimension, then we name the dimension based on our knowledge of domain.
+e.g., prior_prob_count and mean_hint contributes more to PC1; prior_prob_count and mean_attempt contributes more to PC2.
+
+# Part III  
+## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+D11 <- read.csv("humor_data.csv")
+
+D12 <- D11[ ,1:32]
+```
+
+##run correlation and corrplot
+```{r}
+library(corrplot)
+#Generate pairwise correlations
+COR11 <- cor(D12)
+
+corrplot(COR11, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+```
+
+As we can see, there exists moderately positive correlation (0.63) between Q8 & Q20 and between Q18 and Q10 (0.61). There exists moderately negative correlation between Q25 and Q13 (-0.57).
+
+
+##run pca
+```{r}
+D12 <- scale(D12, center = TRUE)
+
+pca2 <- prcomp(D12, scale = TRUE)
+```
+
+```{r}
+pca2$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+pca2$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca2)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+
+plot(pca2, type = "lines")
+```
+
+The the first six principal components explain 53% and the pca's line become flat when comes to the sixth component. Thus, it will make sense to choose first 6 components.
+
+
+##eigenvectors
+```{r}
+pca2$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings2 <- abs(pca2$rotation) #abs() will make all eigenvectors positive
+
+x <- sweep(loadings2, 2, colSums(loadings2), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+library(dplyr)
+x <- x[, 1:6]  #exmaine first 6 components
+#x.sorted <- apply(x, 2,sort,decreasing=T) #sort every column but losing row names
+x.order <- x[order(-x[,"PC1"]), , drop = FALSE]
+x.order <- x[order(-x[,"PC2"]), , drop = FALSE]
+x.order <- x[order(-x[,"PC3"]), , drop = FALSE]
+x.order <- x[order(-x[,"PC4"]), , drop = FALSE]
+x.order <- x[order(-x[,"PC5"]), , drop = FALSE]
+x.order <- x[order(-x[,"PC6"]), , drop = FALSE]
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca2)
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+```
+
+Looking at loadings, we can find that Q5, Q14 and Q17 contributes more to PC1;
+Q20, Q8 and Q4 contributes more to PC2; Q31, Q15 and Q23contributes more to PC3; 
+Q18, Q10 and Q30 contributes more to PC4; Q22, Q16 and Q21contributes more to PC5; 
+Q23, Q29 and Q13 contributes more to PC6;  
+
+From biplot, we can find that Q23, Q31, Q15, Q16 and Q7 are more closer to each other, and vice versa.
+
