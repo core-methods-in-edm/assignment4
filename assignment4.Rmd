@@ -13,11 +13,21 @@ The data you will be using comes from the Assistments online intelligent tutorin
 - mean_hint: The average number of hints a student asked for in the current session
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+```{r}
+install.packages("corrplot")
+install.packages("FactoMineR")
+install.packages("factoextra")
+library(FactoMineR)
+library(factoextra)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+D1 <- read.csv("Assistments-confidence.csv")
+D1 <- D1[,-1]
   #We won't need the id variable, so remove that.
 
 
@@ -33,10 +43,11 @@ library(corrplot)
 #Generate pairwise correlations
 COR <- cor(D1)
 
+#Correlogram 1: Assistments Variables
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
-        sig.level=0.50, insig = "blank")
+        sig.level=0.50, insig = "blank", main = "Assistments Variables")
 
 #Study your correlogram image and save it, you will need it later
 ```
@@ -44,16 +55,16 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D1.1 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
-D2 <- scale(D2, center = TRUE)
+D1.1 <- scale(D1.1, center = TRUE)
 ```
 
 ## Now run the PCA on the new data frame
 
 ```{r}
-pca <- prcomp(D2, scale = TRUE)
+pca <- prcomp(D1.1, scale = TRUE)
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -71,26 +82,36 @@ summary(pca)
 
 #We can look at this to get an idea of which components we should keep and which we should drop
 
-plot(pca, type = "lines")
+#PCA Variance Plot 1: Assistments
+plot(pca, type = "lines", main = "Assistments PCs")
 ```
 
-## Think about which components you would drop and make a decision
+## Q1:Think about which components you would drop and make a decision
+
+## A1: I would drop PC6 since PC1-PC5 capture approx 91% of the variance based on the cumulative proportion shown in the summary.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- as.data.frame(pca$x)
+D2 <- as.data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
-D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+D2.1 <- cbind(D2, as.data.frame(D1$mean_correct))
 
-#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+# Q2: Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+ 
+#A2:Not if we drop PC3 or PC5 since they have virtually no correlation with mean_correct
 
-COR2 <- 
+COR2 <- cor(D2.1)
 
+#Correlogram 2: PCs and Mean Correct
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank", main = "Assistments PCs and Mean Correct")
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
@@ -103,14 +124,146 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
-#Now examine your components and try to come up with substantive descriptions of what some might represent?
+# Q3:Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+# A3: PC1-PC6 Top 3 Variable Contributions:
+
+#PC1 (mean_hint, mean_attempt, and problems_attempted) could represent the extent a student seeks/receives external feedback during a session 
+fviz_contrib(pca, 
+             choice = "var", 
+             axes = 1, 
+             top = 3,
+             title = "PC1 Top 3 Variable Contributions")
+
+# PC2 (prior_percent_correct, prior_prob_count) seems to represent a student's past performance in relation to how many problems the answered 
+fviz_contrib(pca, 
+             choice = "var", 
+             axes = 2, 
+             top = 3,
+             title = "PC2 Top 3 Variable Contributions")
+
+#PC3 (mean_confidence) mostly represents a student's confidence level 
+fviz_contrib(pca, 
+             choice = "var", 
+             axes = 3, 
+             top = 3,
+             title = "PC3 Top 3 Variable Contributions")
+
+#PC4 (prior_prob_count, mean_confidence) seems to represent confidence considering the number of problems a student answered already 
+fviz_contrib(pca, 
+             choice = "var", 
+             axes = 4, 
+             top = 3,
+             title = "PC4 Top 3 Variable Contributions")
+
+#PC5 (mean_attempt, problems_attempted) seems to reflect student persistence 
+fviz_contrib(pca, 
+             choice = "var", 
+             axes = 5, 
+             top = 3,
+             title = "PC5 Top 3 Variable Contributions")
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
-biplot(pca)
+#Biplot 1: Assistments PCA
+biplot(pca,
+       xlabs = rep(".", nrow(D1.1)),
+       cex = c(1,0.5),
+       xlim = c(-0.3, 0.3),
+       ylim = c(-0.3, 0.3),
+       arrow.len = 0.05,
+       expand = 2,
+       main = "Assistments PCA")
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+#Caluclate composites
+Composites <- as.matrix(D1.1) %*% pca$rotation
+Composites <- cbind(Composites, as.data.frame(D1$mean_correct))
+colnames(Composites) <- c("C1", "C2", "C3", "C4", "C5", "C6", "mean_correct")
+
+#Correlogram 3: Composite Variables and Mean Correct 
+COR2.1 <- cor(Composites)
+corrplot(COR2.1, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank", main = "Composite Variables and Mean Correct")
 
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+
+#Load Data
+D3 <- read.csv("humor_data.csv")
+
+##Question-based PCA:
+#Select Questions
+D3.1Q <- D3[1:32]
+
+#Correlogram 4: Humor Questions (too difficult to read)
+COR3.1Q <- cor(D3.1Q)
+corrplot(COR3.1Q, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col=NULL, addCoefasPercent = TRUE, sig.level=0.50, insig = "blank", main = "Humor Questions")
+
+#PCA of questions
+pca3Q <- prcomp(D3.1Q, scale = TRUE)
+
+#PCA Variance Plot 2: Humor Questions PCs
+plot(pca3Q, type = "lines", main = "Humor Questions PCs")
+
+#Examines eigenvalues and cumulative proportion of variance
+pca3Q$rotation
+summary(pca3Q)
+
+#Bind humor style with PC1-PC6
+D3.2 <- as.data.frame(pca3Q$x)
+D3.2 <- D3.2[1:6]
+D3.3 <- cbind(D3.2, as.data.frame(D3[33:36]))
+
+#Correlogram 5: Humor Style and Question-based PCs
+COR3.1Q <- cor(D3.3)
+corrplot(COR3.1Q, order="original", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank", main = "Humor Style and Question-based PCs")
+
+#Biplot 2: Humor Questions PCA
+biplot(pca3Q,
+       cex = c(1,0.5),
+       arrow.len = 0.05,
+       xlabs = rep(".", nrow(D3.3)),
+       main = "Humor Questions PCA")
+
+##Exploratory Analysis of Humor Style:
+#Select humor style
+D3.1HS <- D3[33:36]
+
+#Correlogram 6: Humor Style (least correlation between affiliative and aggresive humor)
+D3.1HS <- scale(D3.1HS, center = TRUE)
+COR3.1HS <- cor(D3.1HS)
+corrplot(COR3.1HS, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank", main = "Humor Style")
+
+#PCA of humor style
+pca3HS <- prcomp(D3.1HS, scale = TRUE)
+
+#PCA Variance Plot 3: Humor Styles PCs
+plot(pca3HS, type = "lines")
+
+#Examines eigenvalues and cumulative proportion of variance
+pca3HS$rotation
+summary(pca3HS)
+
+#Biplot 3: Humor Style PCA
+biplot(pca3HS,
+       cex = c(1,0.5),
+       arrow.len = 0.05,
+       xlim = c(-0.2, 0.15),
+       xlabs = rep(".", nrow(D3.3)),
+       main = "Humor Style PCA")
+```
+
