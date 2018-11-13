@@ -129,12 +129,37 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
-PC1
-PC2
-PC3
-PC4
-PC5
-PC6
+#WHEN I CLICK ON THE "loadings" MATRIX, I AM SEEING COMPLETELY DIFFERENT NUMBERS (I'M GUESSING BECAUSE THIS COMMAND IS SHOWING ME PROPORTIONS OF THE COLUMN). MY INTERPRETATION BELOW IS ASSUMING THE OUTPUT FROM THE "sweep( )" COMMAND.
+
+# 
+#                       PC1        PC2        PC3        PC4         PC5        PC6
+# prior_prob_count      0.12423113 0.25081186 0.22101700 0.31516257 0.003664468 0.14011651
+# prior_percent_correct 0.08035956 0.44677621 0.05108998 0.12062699 0.153315014 0.17770154
+# problems_attempted    0.21744737 0.17344469 0.20060288 0.14475664 0.303884750 0.15748983
+# mean_hint             0.30223780 0.06843387 0.04415217 0.05129246 0.052483764 0.35608836
+# mean_attempt          0.25863458 0.04658844 0.02527878 0.14203987 0.357699023 0.16165478
+# mean_confidence       0.01708956 0.01394492 0.45785919 0.22612148 0.128952980 0.00694897
+# 
+# # PC1 
+#   - driven primarily by mean_hint, followed by mean_attempt and problems_attempted
+#   -students in this category also seem to have a low percentage of correct answers and need lots of hints
+# # PC2
+#   - driven primarily by percent_correct, followed by prior_prob_count and problems_attempted
+#   -these students tended to have more correct answers and successfully completed more previous problems
+# # PC3
+#   - driven primarily by  mean_confidence followed by prior_problem_count and problems attempted
+#   -these students tended to have more confidence and successfully completed more previous problems
+# # PC4
+#   - driven primarily by prior_problem_count followed by mean_confidence (mostly even in other components)
+#   -these students tended to have more experience completing previous problems and feel more confident
+#   -they also need minimal hints
+# # PC5
+#   - driven primarily by mean_attempts followed by problems_attempted and percent correct
+#   -these students in this group were categorized by attempting more problems
+#   -these attempts were not necessarily correct, since this was not as significant for this group
+# # PC6
+#   - the strongest factor driving this grouping is the amount of hints the students needed for the problem
+#   -relative to the other PCA components, confidence was the least important factor in this group
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
