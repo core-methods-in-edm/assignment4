@@ -1,0 +1,184 @@
+---
+title: "Principle Component Aanalysis"
+output: html_document
+---
+## Data
+The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+## Start by uploading the data
+```{r}
+library(dplyr)
+
+D1 <- read.csv("Assistments-confidence.csv", header = TRUE, sep = ",")
+
+  #We won't need the id variable, so remove that.
+
+D1<-select(D1,-1)
+
+```
+
+## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+
+#install.packages("corrplot")
+library(corrplot)
+
+#Generate pairwise correlations
+COR <- cor(D1)
+
+#plotting
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Study your correlogram image and save it, you will need it later
+
+```
+
+## Create a new data frame with the mean_correct variables removed
+
+```{r}
+D2 <- select(D1,-4)
+
+#Then, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+
+#centering is resting the mean and dividing by sd; and scaling is by transforming by -1 and 1.
+
+```
+
+## Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+#eigenvalues gives the direction of linear combination of all variables that describes an cluster of information that are correlated. In this cases is a 6x342 matrix. It's always a mxn matrix from mxn original data. It is the resulted after multiplying by the eigenvector.
+
+pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+
+plot(pca, type = "lines")
+```
+
+## Think about which components you would drop and make a decision
+
+**The component 6 is the component with the  lowest variance. Hence, it seems that this component 6 is the one that contributes the least in the Assistments online intelligent tutoring system dataset. If I would have to drop component, I would component 6.**
+
+## Part II
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.
+
+D3 <- as.data.frame(pca$x)
+
+#Attach the variable "mean_correct" from your original data frame to D3.
+
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+
+COR2 <-  cor(D4)
+
+#plotting
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+```
+
+**Initially, I suggested to drop component 6. However, this componet is relatively high correlated with mean_correct. Hence, it would be an error to drop this component. However, I won't lose important information, whether I drop PC3 and PC5.**
+
+## Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+
+#eigenvector is the non-zero matrix that transform the orignal matrix into eigenvalue. In this case is 6x6 matrix. It is always a mxm matrix from a mxn matrix. The eigenvector gives the length of stretch of the original matrix.
+
+pca$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?). [Mary] this should sum 1 for the whole column 
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#PC1 seems to represent persistence of students  of current problem set, since problems_attempted, mean_hint, and mean_attempt account for a great part of the variation of PC1.
+#PC2 seems to represent initial knowledge of students, since prior_percent_correct accounts for a great part of the variation of PC2.
+#PC3 seems to represent level of confidence of students to answer question, since mean_confidence accounts for a great part of the variation of PC3.
+#PC4 seems to represent level of confidence of students generated by their natural persistence, since mean_confidence and prior_prob_count account for a great part of the variation of PC4.
+#PC5 seems to represent determination and guessing of students of current problem set, since mean_attempt and problems_attempted account account for a great part of the variation of PC5.
+#PC5 seems to represent determination to learn of students of current problem set, since mean_attempt and problems_attempted account account for a great part of the variation of PC5.
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca)
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+D5<- as.matrix(D2) %*% pca$rotation
+D6<- cbind(D5, as.data.frame(D1$mean_correct))
+COR3 <- cor(D6)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+ tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+
+```
+# Part III  
+## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+DF1 <- read.csv("humor_data.csv", header=TRUE)
+DF1 <- DF1[1:32]
+COR4 <- cor(DF1)
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+DF2 <- scale(DF1, center = TRUE,scale=TRUE)
+pca2 <- prcomp(DF2, scale = TRUE)
+pca2$sdev
+pca2$sdev^2
+summary(pca2)
+plot(pca2, type = "lines")
+biplot(pca2)
+DF3<-as.data.frame(pca2$x)
+DF4<-subset(DF3,select=c(1:6))
+DF5<-cbind(DF4,as.data.frame(DF[,33:36]))
+DF6<-scale(DF5,center=TRUE)
+COR4<-cor(DF6)
+ corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper",        
+ tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+```
+
