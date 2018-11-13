@@ -1,5 +1,6 @@
 ---
-title: "Principle Component Aanalysis"
+title: "Principle Component Analysis"
+author: "Meijuan Zeng"
 output: html_document
 ---
 ## Data
@@ -16,10 +17,13 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+D1 <- read.csv("Assistments-confidence.csv", header = TRUE)
 
-  #We won't need the id variable, so remove that.
-
+#We won't need the id variable, so remove that.
+D1 <- D1[,-1]
 
 ```
 
@@ -28,6 +32,7 @@ D1 <-
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
+install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,16 +49,17 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
-
-#The, scale and center your data for easier interpretation
+D2 <- D1[,-4]
+#Then scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
+
 ```
 
 ## Now run the PCA on the new data frame
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
+
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -76,12 +82,14 @@ plot(pca, type = "lines")
 
 ## Think about which components you would drop and make a decision
 
+#I will drop PC6 because this component shows nearly no variance (below 0.1) and is not meaningful in data analysis.
+
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- as.data.frame(pca$x)
+D3 <- as.data.frame(pca$x[,1:5])
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,21 +97,29 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
+#No, because PC3 and PC5 have little impact on mean_correct.
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
-pca$rotation
 
 #Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
 
+eigen(COR2)
+pca$rotation
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#These components convert the original data into a new form, some of which can show study motivation and some can show knowledge test performance.
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
@@ -111,6 +127,39 @@ biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+D5 <- as.matrix(D2) %*% pca$rotation
+D6 <- cbind(D5, D1$mean_correct)
+COR3 <- cor(D6)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+ tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
 ```
+
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r} 
+humor <- read.csv("humor_data.csv", header = TRUE)
+DF1 <- humor[,1:32]
+DF2 <- scale(DF1, center = TRUE)
+
+pca1 <- prcomp(DF2, scale = TRUE)
+pca1$sdev
+pca1$sdev^2
+summary(pca1)
+plot(pca1, type = 'lines')
+biplot(pca1)
+
+DF3 <- as.data.frame(pca1$x)
+DF4 <- select(DF3, 1:6)
+DF5 <- cbind(DF4, humor[,33:36])
+DF6 <- scale(DF5, center = TRUE)
+COR4 <- cor(DF6)
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper",        
+ tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+```
+
+
