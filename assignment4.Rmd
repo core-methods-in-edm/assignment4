@@ -16,10 +16,15 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(corrplot)
+
+D1 <- read.csv("Assistments-confidence.csv", header=TRUE, na.strings="")
 
   #We won't need the id variable, so remove that.
-
+D1 <- D1 %>% select(-id)
 
 ```
 
@@ -27,8 +32,6 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
-library(corrplot)
 
 #Generate pairwise correlations
 COR <- cor(D1)
@@ -44,7 +47,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1 %>% select(-mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -75,6 +78,7 @@ plot(pca, type = "lines")
 ```
 
 ## Think about which components you would drop and make a decision
+From the result, I would drop PC5 and PC6, because they account for a relative small proportion of variance and PC1-4 account for nearly 80% variance.
 
 ## Part II
 
@@ -89,9 +93,19 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
+# drop PC5 and PC6
+d3<-select(D4, -PC6)
+COR22<-cor(d3)
+corrplot(COR22, order="AOE", method="circle")
 ```
+We found that when PC6 was dropped, we lose an important correlation between PC6 and mean_correct. So we should really be cautious when dropping components.
+
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
@@ -111,6 +125,47 @@ biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+df1<-read.csv("humor_data.csv", header = TRUE)
+df2<-select(df1, 1:32)
+df3<-select(df1, 33:36)
+
+# plot the correlation between four scale scores of the HSQ
+cor1<-cor(df3)
+corrplot(cor1, type="upper", method="color", order="AOE", addCoef.col = "gray")
+
+# plot the correlation for all the questions so that we can see which questions are positively correlated and which are negatively correlated
+cor2<-cor(df2)
+corrplot(cor2, type="upper", method="color", order="AOE")
+
+# explore by plotting: if we are going to cluster the questions into 4 scales, what is the possible clustering
+col1 <- colorRampPalette(c("#7F0000", "red", "#FF7F00", "yellow", "white", "cyan", "#007FFF", "blue", "#00007F"))
+corrplot(cor2, order="hclust", addrect=4, method="color", col=col1(50))
+```
+From the plot, we see Question 22, 9, 29, 25, 1, 17 are in one cluster (which overlap with "affiliative" scale on Q1,Q9,Q17,Q25,Q29); Question 16, 7, 23, 15, 31 are in the seconde cluster (which overlap with "aggressive" scale on Q7,Q15,Q23,Q31); Question 6, 30 ,14, 26, 2, 10, 18, 28, 5, 13, 21 are in the third cluster (which mostly overlap with "selfenhancing" scale except for lacking Q22); and the last cluster overlap with "selfdefeating" scale.
+
+```{r}
+# conduct pca analysis 
+df2_1<-scale(df2, center=TRUE)
+pca1<-prcomp(df2_1, scale=TRUE)
+plot(pca1, type="lines")
+
+summary(pca1)
+df3<-as.data.frame(pca1$x)
+df3<-select(df3, 1:4)
+df4<-as.data.frame(pca1$rotation)
+df4<-select(df4, 1:4)
+df4_1<-abs(df4)
+sweep(df4_1, 2, colSums(df4_1), "/")
+
+# plot the data on first two principle components
+biplot(pca1)
+
+```
+
+From the plot, we see questions are clustered in four area, which corresponds to the pattern of original four scales from the research. For example, the questions clustered at low-right corner correspond to "aggressive" scale.
