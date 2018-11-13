@@ -1,4 +1,5 @@
 ---
+Megan Dansby Russell
 title: "Principle Component Aanalysis"
 output: html_document
 ---
@@ -14,12 +15,25 @@ The data you will be using comes from the Assistments online intelligent tutorin
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
 
+
+```{r}
+library("dplyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("ggplot2", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("igraph", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("RColorBrewer", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("tidyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("tidyselect", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library(factoextra)
+```
+
+
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- data.frame(read.csv("Assistments-confidence.csv"))
 
   #We won't need the id variable, so remove that.
 
+D1 <- select(D1, -id)
 
 ```
 
@@ -27,8 +41,8 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
-library(corrplot)
+install.packages("corrplot")
+library("corrplot")
 
 #Generate pairwise correlations
 COR <- cor(D1)
@@ -44,7 +58,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- select(D1, -mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -57,6 +71,8 @@ pca <- prcomp(D2, scale = TRUE)
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+Not fully confident about WHY we are generating eigenvalues, or why we need the S.D. of component variances. Can we not graph AT ALL without it, or because we are plotting something "special?"
 
 ```{r}
 pca$sdev
@@ -75,6 +91,10 @@ plot(pca, type = "lines")
 ```
 
 ## Think about which components you would drop and make a decision
+Not sure about what I am attempting to accomplish here, and what should be my criteria for dropping component. I am assuming component 1, since it seems substantially higher than the other points.
+
+However, after reviewing the reading, it seems like we want to drop the component that contributes LEAST to the variation in the dataset...(http://setosa.io/ev/principal-component-analysis/). Does this mean that it is basically what most of all the other values are? If this is the case, then we actually should drop COMPONENT 6?
+
 
 ## Part II
 
@@ -89,13 +109,18 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
 pca$rotation
+rotationDF <- as.data.frame(pca$rotation)
 
 #Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
 
@@ -104,6 +129,12 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+PC1
+PC2
+PC3
+PC4
+PC5
+PC6
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
@@ -111,6 +142,129 @@ biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+STUDENTS <- data.frame(read.csv("Assistments-confidence.csv"))
+names(STUDENTS)[1] <- "student_ID"
+names(D4)[7] <- "mean_correct"
+
+MEAN_CORRECT <- select(STUDENTS, mean_correct)
+# Not sure about what you mean by "show their relationship to mean_correct". Should this be the only variable across the top in the correlation matrix, or is it ok to have it WITHIN the matrix?
+
+COR3 <- cor(STUDENTS)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
 ```
+
+
+
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+## Start by uploading the data
+```{r}
+HUMOR1 <- data.frame(read.csv("humor_data.csv"))
+
+```
+
+## If an "accuracy" entry = 0, remove that line from the dataset
+```{r}
+
+HUMOR2 <- HUMOR1
+
+```
+
+#Generate pairwise correlations
+```{r}
+humorCOR <- cor(HUMOR2)
+
+corrplot(humorCOR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+```
+
+
+# Scale and center data for easier interpretation
+
+```{r}
+ 
+HUMOR3 <- scale(HUMOR2, center = TRUE)
+```
+
+## Now run the PCA on the new data frame
+
+```{r}
+humorPCA <- prcomp(HUMOR3, scale = TRUE)
+```
+
+
+```{r}
+## Although prcomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+humorPCA$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+humorPCA$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(humorPCA)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+
+plot(humorPCA, type = "lines")
+#It looks like component 7 through 10 could be dropped
+```
+
+#I am getting confused about what we are trying to accomplish here between PCA and correlations...
+
+```{r}
+
+humorPCA$rotation
+rotationHumorPCA <- as.data.frame(humorPCA$rotation)
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+HUMORloadings <- abs(humorPCA$rotation) #abs() will make all eigenvectors positive
+
+sweep(HUMORloadings, 2, colSums(HUMORloadings), "/") #sweep() computes each row as a proportion of the column.
+```
+
+#I see that I have 39 components! Based upon the PCA graph, it appears that I can likely make enough sense of the data with only the first 6 components
+```{r}
+#Simplifying humor loadings to only the first 6 components
+
+simpleHumorLoadings <- HUMORloadings[,c("PC1", "PC2", "PC3", "PC4", "PC5", "PC6")]
+```
+
+    #FOR SOME REASON, THIS ADDED MORE COMPONENTS THAN I WANTED, SO I AM NOT RUNNING THESE LINES
+    <!-- #Examine the eigenvectors, then make them proportional within each component -->
+    
+    <!-- simpleHumorLoadings <- abs(humorPCA$rotation) #abs() will make all eigenvectors positive -->
+    
+    <!-- sweep(simpleHumorLoadings, 2, colSums(simpleHumorLoadings), "/") #sweep() computes each row as a proportion of the column. -->
+
+
+#Exploring various capabilities of the "factoextra library"
+#Code from here: http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/
+```{r}
+#Code for trying to see groups of individuals with similar qualities
+
+fviz_pca_ind(humorPCA,
+             col.ind = "cos2", # Color by the quality of representation
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+
+
+```
+
+#See Eigenvalues
+```{r}
+seeEigenval <- get_eigenvalue(humorPCA)
+seeEigenval
+```
+
+
