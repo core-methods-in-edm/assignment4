@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+D1 <- read.csv("Assistments-confidence.csv")
+library(tidyverse)
   #We won't need the id variable, so remove that.
-
+D1<-D1[-1]
 
 ```
 
@@ -27,7 +27,7 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,9 +44,9 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[-4]
 
-#The, scale and center your data for easier interpretation
+#Then, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
 ```
 
@@ -75,6 +75,7 @@ plot(pca, type = "lines")
 ```
 
 ## Think about which components you would drop and make a decision
+Looking at the Scree plot above, the first two components account for a relatively large amount of variance compared to the last four components. However, the third component also has a variance value of over 1 so that should mean it explains slightly more variance than just a single item in our dataset. So I would probaby keep 3 components.
 
 ## Part II
 
@@ -88,11 +89,32 @@ D3 <- as.data.frame(pca$x)
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+```
 
-COR2 <- 
+#No, it doesn't look like I would have lost very much important information. The 2nd through 6th components all plateaued at a variance of 1. They would not have contributed much to explaining the variance in our data.
+
+```{r}
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Then, scale and center your data for easier interpretation
+D5 <- scale(D4, center = TRUE)
+
+pca <- prcomp(D5, scale = TRUE)
+
+plot(pca, type = "lines")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+eigen(COR2)
+
+```
+
 
 ```{r}
 pca$rotation
@@ -101,9 +123,18 @@ pca$rotation
 
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
-sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+load1<-sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+```
+The biplot was sort of helpful in understanding which components would be helpful. What is confusing to me is that PC1 and PC2 are supposed to be the x- and y-axes but there is also a vector representation of them (not pointing directly along the axes). Anyway, what I think it shows is that PC1 "goes together" well with the mean_correct variable. I'm unsure why the actual arrow of PC1 points in the negative direction of its own axis.
+
+PC2 and PC4 are the next closest components to pointing in the same direction as mean_correct. So perhaps it would be best to keep PC1,PC2, and PC4. Although, PC3 and PC5 are aligned with the y-axis (PC2) so they are highly correlated to PC2.
+
+From the initial correlation plot, "prior_percent_corret" had a high correlation with "mean_correct" so it is probably represented in PC1 or PC2. "Problems_attempted" and "prior_prob_count" had similarly small correlations with "mean_correct" so they must be represented by PC1 and PC2 as well. Since "mean_hints" has such a negative correlation with "mean_correct" I would assume that it is mostly represented by PC 6.
+
+```{r}
+
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
@@ -111,6 +142,88 @@ biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+#I'm not sure if what I have below is what you want.
+
+#PC1,2, & 4 are my composite variables that have values for each student
+#remove PC3, PC5, and PC6 from the pca
+D6<-select(D4,"PC1","PC2","PC4","D1$mean_correct")
+
+COR3 <- cor(D6)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+E1<-read.csv("humor_data.csv")
+
+#Pairwise correlations
+E2<-E1[,-c(33:39)]
+##Looking at which Qns best correlate with only the self-deprecating humor
+#E2<-E1[,-c(33:35,37:39)] 
+
+##Looking at which Qns best correlate with the four different kinds of humor
+#E2<-E1[,-c(37:39)]
+CORE <- cor(E2)
+
+corrplot(CORE, order="AOE", method="circle", tl.pos="lt", type="upper",   tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#E3<-E2[,-33]
+
+E3 <- scale(E2, center = TRUE)
+pca <- prcomp(E3, scale = TRUE)
+summary(pca)
+plot(pca, type = "lines")
+
+#So looking at the Scree plot and the summary, components 1-5 look good because they can explain variances from  more than 19% at best to a little above 4.5% at worst. After the fifth component the graph levels off and each component only accounts for 3% or less.
+
+E4 <- as.data.frame(pca$x)
+
+#Attach one of the variables for humor categories from the original data frame to E4.
+
+#E5 <- cbind(E4, as.data.frame(E1$affiliative))  #AFFILIATIVE HUMOR
+#E5 <- cbind(E4, as.data.frame(E1$selfenhancing))  #Self-enhancing HUMOR
+#E5 <- cbind(E4, as.data.frame(E1$agressive))  #AGGRESSIVE HUMOR
+E5 <- cbind(E4, as.data.frame(E1$selfdefeating))  #SELF-DEFEATING HUMOR
+
+
+CORE2 <- cor(E5)
+corrplot(CORE2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Then, scale and center your data for easier interpretation
+E6 <- scale(E5, center = TRUE)
+
+pca <- prcomp(E6, scale = TRUE)
+
+plot(pca, type = "lines")
+
+#get the eigenvectors
+eigen(CORE2)
+
+pca$rotation
+
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+
+load1<-sweep(loadings, 2, colSums(loadings), "/")
+
+biplot(pca)
+
+#The biplot excluding any of the humor types shows 4 groupings of questions going in opposite directions from each other.  I wonder if each of these clusters of Questions corresponds to one of the 4 categories of humor they listed?
+#Doing PCA for just Affiliative humor shows we have one composite variable that can explain 54% of the variation.
+#For Self-Enhancing humor, the PC1 composite variable represents 49%  of the variance.
+#For Aggressive humor, the PC1 composite variable represents 49%  of the variance.
+#For Self-deafeating humor, the PC1 composite variable represents 40% of the variance.
+
+
+
+```
+
