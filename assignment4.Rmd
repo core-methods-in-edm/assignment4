@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("Assistments-confidence.csv", header=TRUE)
 
   #We won't need the id variable, so remove that.
-
+D1$id<-NULL
 
 ```
 
@@ -27,7 +27,7 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -39,12 +39,14 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
         sig.level=0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
+#Positive correlations are displayed in blue and negative correlations in red color. Color intensity and the size of the circle are proportional to the correlation coefficients. In the right side of the correlogram, the legend color shows the correlation coefficients and the corresponding colors. 
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1
+D2$mean_correct<-NULL
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -76,11 +78,15 @@ plot(pca, type = "lines")
 
 ## Think about which components you would drop and make a decision
 
+```{r}
+#Answer: I would want to drop PC6 because the previous 5 PCs have explained 91% of the variances.
+
+```
+
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
-
 D3 <- as.data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
@@ -89,7 +95,14 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4) 
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Answer: According to the correlogram, mean_correct has a high correlation with PC6. Therefore, dropping PC6 we will loss important information about mean_correct
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -105,12 +118,49 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
+#Answer: 
+##PC1-students' effort in solving the problems
+##PC2-students' progress in finishing the session
+##PC3-students' confidence in solving the problems
+##PC4/5/6 dropped
+
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
-biplot(pca)
+biplot(pca, expand=2)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+D5<-predict(pca,D2)
+D6 <- cbind(D5, as.data.frame(D1$mean_correct))
+
+COR3 <- cor(D6) 
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+```{r}
+#load data and select variables
+H1 <- read.csv("humor_data.csv", header=TRUE)
+H2 <- H1[,1:32]
+#correlation matrix and correlogram
+corgraph <- cor(H2)
+corrplot(corgraph, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", 
+         tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, 
+         insig = "blank")
+#PCA 
+ppca <- prcomp(H2, scale = TRUE)
+#get a hint of what components look like
+summary(ppca)
+plot(ppca, type = "lines")
+#print out eigenvalues
+ppca$rotation
+loadings2 <- abs(ppca$rotation) 
+sweep(loadings2, 2, colSums(loadings2), "/")
+#check biplot to see the direction of components
+biplot(ppca, expand=1)
+#Answer: According to the biplot, the components point to four directions. A further look at the components clustered together confirms the researchers' classification of sense of humor. 
+```
+
