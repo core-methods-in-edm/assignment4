@@ -1,5 +1,7 @@
 ---
-title: "Principle Component Aanalysis"
+title: "Assignment 4: Principle Component Aanalysis"
+author: "Qiyu Chen"
+date: "November, 2018"
 output: html_document
 ---
 ## Data
@@ -16,10 +18,13 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+D1 <- read.csv("Assistments-confidence.csv")
 
   #We won't need the id variable, so remove that.
-
+D1 <- select(D1, -id)
 
 ```
 
@@ -44,7 +49,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <-  select(D1, - mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -89,7 +94,7 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -110,7 +115,65 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
 
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+```{r}
+#load the data
+D1 <- read.csv("humor_data.csv")
+
+#here we aim to perform PCA on the raw answers to the 32 questions
+#select answers to the questions
+D2 <- select(D1, Q1:Q32, accuracy)
+#Generate pairwise correlations
+COR <- cor(D2)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+D3 <-  select(D2, - accuracy)
+#The, scale and center your data for easier interpretation
+D3 <- scale(D3, center = TRUE)
+
+#RUN PCA
+pca <- prcomp(D3, scale = TRUE)
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+
+plot(pca, type = "lines")
+#It appears 4 or 5 PCs from the plot as the left goes flat
+
+
+#use biplot
+biplot(pca)
+#So it can be seen that from the plot, they are almost the variables in 4 directions in PC1 and PC2 plot, so we can find these questions could form around 4 and 5 PCs to measure the sense of people in humor 
+
+#to obtain details of transformations, we can Examine the eigenvectors 
+pca$rotation
+
+#check proportions
+
+loadings <- abs(pca$rotation) 
+
+sweep(loadings, 2, colSums(loadings), "/") 
+
+#at last, we might check the first 5 PCs with the relations of accuracy
+
+COR2 <- cor(cbind(pca$x[,1:5], accuracy = D1$accuracy))
+
+COR2[,6]
+#it appears correlations are not weak.
+```
+
