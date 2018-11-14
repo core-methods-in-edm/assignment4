@@ -1,0 +1,154 @@
+---
+title: "Principle Component Aanalysis"
+output: html_document
+---
+## Data
+The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
+
+- id
+- prior_prob_count: How many problems a student has answered in the system prior to this session
+- prior_percent_correct: The percentage of problems a student has answered correctly prior to this session
+- problems_attempted: The number of problems the student has attempted in the current session
+- mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
+- mean_hint: The average number of hints a student asked for in the current session
+- mean_attempt: The average number of attempts a student took to answer a problem in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+
+## Start by uploading the data
+```{r}
+D1 <- read.csv("Assistments-confidence.csv", header=TRUE, sep = ",")
+View(D1)
+
+  #We won't need the id variable, so remove that.
+
+D1 <- dplyr::select(D1,-"id")
+View(D1)
+
+```
+
+## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms) 
+
+install.packages("corrplot")
+library(corrplot)
+
+#Generate pairwise correlations
+COR <- cor(D1)
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#Study your correlogram image and save it, you will need it later
+```
+
+## Create a new data frame with the mean_correct variables removed
+
+```{r}
+D2 <- dplyr::select(D1,-"mean_correct")
+View(D2)
+
+#The, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+```
+
+## Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+
+## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(pca)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+
+plot(pca, type = "lines")
+```
+
+## Think about which components you would drop and make a decision
+
+## Part II
+
+```{r}
+#Now, create a data frame of the transformed data from your pca.
+
+D3 <- as.data.frame(pca$x)
+
+#Attach the variable "mean_correct" from your original data frame to D3.
+
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+```
+## Now print out the eigenvectors (often called loadings) for the components you generated:
+
+```{r}
+pca$rotation
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+loadings <- abs(pca$rotation) 
+#abs() will make all eigenvectors positive
+
+sweep(loadings, 2, colSums(loadings), "/") 
+#sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent? The correlations between the principal components and the original variables are copied into the table below. The first principal componet is strongly correctlated with two of the original values. The first component increases with increasing mean_hint and mean_attempt scores. It would follow that students with higher number of hints received would perform better. The second principal component increases with only one of the values, increasing prior_percent_correct. This component can be viewed as a measure of how well student perform when the percentage of problems a student has answered correctly prior to this session is higher. The third component decreases with decreasing mean_confidence. This suggests that performance decreases when average confidence each student has in their ability to answer the problems decreases. The fourth principal component increases only with only one of the values, decreasing prior_prob_count. This measure can be viewed as how poorly students fair when the number of problems students have answered in the system prior to this session decreases. The fifth principal component is strongly correlated with two of the original values, problems attempted and means_attempt. It would make sense to see an increase in performance when the average number of correct answers on first attempt increases and the average number of attempts decreases. In contrast the fourth principal, the sixth principal increases with only one of the values, increasing mean_hint. This indicates that students tend to perform better when they have access to additional support.
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+
+biplot(pca)
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+```
+# Part III  
+## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+HUM <- read.csv("humor_data.csv")
+View(HUM)
+
+HUM<- dplyr::select(HUM,1:32)
+View(HUM)
+
+library(corrplot)
+CORHUM <- cor(HUM)
+corrplot(CORHUM, order="AOE", method="circle", tl.pos="lt", type="upper",
+tl.col="black", tl.cex=0.7, tl.srt=40, addCoef.col="black", addCoefasPercent= TRUE, sig.level=0.50, insig="blank")
+
+```
+```{r}
+HUM<-scale(HUM, center=TRUE)
+PCAHUM<-prcomp(HUM, scale=TRUE)
+PCAHUM$sdev
+PCAHUM$sdev^2
+summary(PCAHUM)
+plot(PCAHUM, type= "lines")
+```
+```{r}
+PCAHUM$rotation
+loadings<-abs(PCAHUM$rotation)
+sweep(loadings,2,colSums(loadings),"/")
+biplot(PCAHUM)
+```
+
