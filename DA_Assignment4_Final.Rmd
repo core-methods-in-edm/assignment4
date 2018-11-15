@@ -1,0 +1,93 @@
+---
+title: "DA_Assignment4_Final"
+author: "DA"
+date: "November 15, 2018"
+output: html_document
+---
+```{r}
+#Part 1
+#create new data frame
+D1 <- read.csv("Assistments-confidence.csv", header = TRUE)
+#remove ID varibale
+library(dplyr)
+D1 <- select(D1, prior_prob_count:mean_confidence)
+library(corrplot)
+#Generate pairwise coorelation
+COR <- cor(D1)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#create a new data frame by removing mean_correct variable
+D2 <- D1[,-4]
+#data scaled for easier interpretation
+D2 <- scale(D2, center = TRUE)
+#Run PCA in new data frame
+pca <- prcomp(D2, scale = TRUE)
+#print standard deviations
+pca$sdev
+#change to variance by squaring it
+pca$sdev^2
+#following summary will give the proprtion of variance accounted for by each component
+summary(pca)
+plot(pca, type = "lines")
+#Glancing at the proportion of variance, PC5 and PC6 should be dropped. Note that PC5 accounts for 12 percent variance while PC6 accoutns for only 8 percent. 
+```
+
+```{r}
+#Part II
+D3 <- as.data.frame(pca$x)
+#attach the mean_correct abck to the new data frame by useing cbind function
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+#re-run the scatterplots
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+pca$rotation
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+loadings <- abs(pca$rotation)
+#sweep() computes each row as a proportion of the column
+sweep(loadings, 2, colSums(loadings)
+#with Dplyr
+library(tidyr)
+loadings1 <- tbl_df(loadings)
+Variables <- c("prior_prob_count", "prior_percent_correct", "problems_attempted", "mean_hint", "mean_attempt", "mean_confidence ") 
+loadings2 <- cbind(Variables, loadings1)
+loadings3 <- loadings2 %>% mutate(PC1 = PC1/sum(PC1)) %>% mutate(PC2 = PC2/sum(PC2)) %>% mutate(PC3 = PC3/sum(PC3)) %>% mutate(PC4 = PC4/sum(PC4)) %>% mutate(PC5 = PC5/sum(PC5)) %>%  mutate(PC6 = PC6/sum(PC6)) %>% print
+#compute biplot
+biplot(pca)
+#PC1 contributes the most to mean_hint, PC2 to prior_percent correct, PC3 to mean_confidence, PC4 to prior_percent_correct, Pc_5 to mean attempt and PC6 to mena_hint. 
+D3<- as.matrix(D2) %*% pca$rotation
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+COR3 <- cor(D4)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+```
+
+```{r}
+#part III
+A1 <- read.csv("humor_data.csv", header=TRUE)
+(A1 <- A1[,1:32])
+A2 <- scale(A1, center = TRUE)
+pca2 <- prcomp(A2, scale = TRUE)
+#standard deviation and variance
+pca2$sdev
+pca2$sdev^2
+summary(pca2)
+plot(pca2, type = "lines")
+biplot(pca2)
+loadings4 <- abs(pca2$rotation)
+loadings5 <- sweep(loadings4, 2, colSums(loadings4), "/")
+A3 <- as.matrix(A2) %*% pca2$rotation
+COR4 <- cor(A3)
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
