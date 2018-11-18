@@ -16,7 +16,8 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("Assistments-confidence.csv", header=TRUE)
+(D1 <- D1[,-1])
 
   #We won't need the id variable, so remove that.
 
@@ -27,7 +28,7 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,7 +45,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -89,9 +90,18 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
-
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
+```{r}
+# Yes, if drop some components will cause losing important infomation about mean_correct.
+```
+
+
+
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
@@ -105,12 +115,45 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
+# PC1:  the most variance in the three following variables are mean_hint, mean_attempt, and problems_attempted.
+# PC2: the most variances are prior_prob_count, prior_percent_correct, and problems_attempted.
+# PC3: the most variances are prior_prob_count, problems_attempted, and mean_confidence.
+# PC4: the most variances are prior_prob_count and mean_confidence.
+# PC5: the most variances are problems_attempted and mean_attempt.
+# PC6: the most variance is mean_hint.
+
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
-
+D2a<- as.matrix(D2) %*% pca$rotation
+D2b <- cbind(D2a, as.data.frame(D1$mean_correct))
+COR3 <- cor(D2b)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+```{r}
+DF <- read.csv("humor_data.csv", header=TRUE)
+(DF1 <- DF[,1:32])
+DF2 <- scale(DF1, center = TRUE)
+pca1 <- prcomp(DF2, scale = TRUE)
+pca1$sdev
+pca1$sdev^2
+summary(pca1)
+plot(pca1, type = "lines")
+biplot(pca1)
+loadings5<- abs(pca1$rotation)
+loadings6 <- sweep(loadings5, 2, colSums(loadings5), "/")
+DF2a <- as.matrix(DF2) %*% pca2$rotation
+COR4 <- cor(DF2a)
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+```
+
