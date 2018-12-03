@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("Assistments-confidence.csv")
+D1 <- D1[,-1]
 
-  #We won't need the id variable, so remove that.
-
+#We won't need the id variable, so remove that.
 
 ```
 
@@ -33,18 +33,21 @@ library(corrplot)
 #Generate pairwise correlations
 COR <- cor(D1)
 
+jpeg('CorrelationPlot.jpg')
+
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
-tl.col="black", tl.cex=0.6, tl.srt=45, 
+        tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
+dev.off()
 #Study your correlogram image and save it, you will need it later
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -75,6 +78,7 @@ plot(pca, type = "lines")
 ```
 
 ## Think about which components you would drop and make a decision
+I will drop PC6 since it has the smallest variance, and probably will not tell us a lot of useful information. 
 
 ## Part II
 
@@ -89,7 +93,16 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+jpeg('CorrelationPlot - PCA.jpg')
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+        tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+dev.off()
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -102,15 +115,50 @@ pca$rotation
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
-
+```
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+If we assume the cutoff number is 0.25, then:
+- For PC1, mean hint & mean attempt are important;
+- For PC2, prior prob count & prior percent correct are important;
+- For PC3, mean confidence is important;
+- For PC4, prior prob count is important;
+- For PC5, problems attempted & mean attempt are important;
+- For PC6, mean hint is important.
 
+```{r}
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+D5 <- predict(pca, D2) #It is the same as pca$x
+
 
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+K1 <- read.csv("humor_data.csv")
+K1 <- K1[,1:32]
+
+COR3 <- cor(K1)
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+        tl.col="black", tl.cex=1.9, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+K2 <- scale(K1, center = TRUE)
+PCA <- prcomp(K2, scale = TRUE)
+plot(PCA, type = "lines")
+
+K3 <- as.data.frame(PCA$x)
+K3 <- K3[,1:5]
+
+biplot(PCA)
+#Our biplot aligns with the reserarch result, and each cluster may represent a characteristic from "affiliative","selfenhancing","agressive","selfdefeating".
+
+```
+
+
