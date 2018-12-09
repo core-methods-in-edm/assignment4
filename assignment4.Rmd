@@ -16,10 +16,9 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+D1 <- read.csv("Assistments-confidence.csv")
   #We won't need the id variable, so remove that.
-
+D1 <- D1[,-1]
 
 ```
 
@@ -27,7 +26,7 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,7 +43,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-5]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -56,7 +55,7 @@ D2 <- scale(D2, center = TRUE)
 pca <- prcomp(D2, scale = TRUE)
 ```
 
-## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+## Although princomp does not generate the eigen values directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
 
 ```{r}
 pca$sdev
@@ -76,6 +75,8 @@ plot(pca, type = "lines")
 
 ## Think about which components you would drop and make a decision
 
+It would be reasonable to drop pc6, since it has the lowest variance proportion.
+
 ## Part II
 
 ```{r}
@@ -89,7 +90,14 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+# Yes, if I had removed PC6, I would miss the correlation relationship of PC6 and mean correct.
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -103,7 +111,7 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
-#Now examine your components and try to come up with substantive descriptions of what some might represent?
+c#Now examine your components and try to come up with substantive descriptions of what some might represent?
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
@@ -114,3 +122,30 @@ biplot(pca)
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+```{r}
+Data <- read.csv("humor_data.csv")
+head(Data)
+Data <- Data[,-1:-32]
+Cor <- cor(Data)
+Cor
+corrplot(Cor, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+Data2 <- scale(Data, center = TRUE)
+pca2 <- prcomp(Data2, scale=T)
+summary(pca2)
+plot(pca2, type = "lines")
+# Drop PC6 and PC7 since they explain very small proportion of variance.
+pca2$rotation
+loadings2 <- abs(pca2$rotation) 
+sweep(loadings2, 2, colSums(loadings2), "/")
+biplot(pca2)
+
+
+
+
+```
+
+
+
