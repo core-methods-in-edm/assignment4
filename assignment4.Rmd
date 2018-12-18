@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+library(tidyverse)
+D1 <- read.csv("Assistments-confidence.csv",header = TRUE)
   #We won't need the id variable, so remove that.
-
+D1 <- select(D1,-id)
 
 ```
 
@@ -28,6 +28,7 @@ D1 <-
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
+install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -37,6 +38,10 @@ corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
+# error: cannpt copy from null device
+#print(cor_plot)
+#dev.copy(png,'correlogram.png')
+#dev.off()
 
 #Study your correlogram image and save it, you will need it later
 ```
@@ -44,7 +49,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- select(D1,-mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -75,6 +80,7 @@ plot(pca, type = "lines")
 ```
 
 ## Think about which components you would drop and make a decision
+I will drop PC5 and PC6, because their variance values are relatively small. 
 
 ## Part II
 
@@ -89,7 +95,20 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+D5<-select(D4, -PC6,-PC5)
+COR3<-cor(D5)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+# Compared those two correlograms, we did lose an important correlation between PC6 and mean_correct when dropping PC5 AND PC6.
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -114,3 +133,28 @@ biplot(pca)
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+DF <- read.csv("humor_data.csv", header = TRUE)
+COR1 <- cor(DF)
+corrplot(COR1,method="circle")
+DF_scaled <- scale(DF, center = TRUE)
+pca1 <- prcomp(DF_scaled, scale = TRUE)
+pca1$sdev
+pca1$sdev^2
+summary(pca1)
+plot(pca1, type = "lines")
+pca1$rotation
+loadings1 <- abs(pca1$rotation)
+sweep(loadings1, 2, colSums(loadings1), "/")
+biplot(pca1)
+
+
+
+
+
+
+
+```
+
+
