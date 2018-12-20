@@ -16,7 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+
+D  = read.csv("Assistments-confidence.csv")
+
+D1 <- D[, -c(1)]
 
   #We won't need the id variable, so remove that.
 
@@ -28,6 +31,7 @@ D1 <-
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
+install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,7 +48,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[, -c(4)]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -54,6 +58,7 @@ D2 <- scale(D2, center = TRUE)
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
+
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -76,6 +81,8 @@ plot(pca, type = "lines")
 
 ## Think about which components you would drop and make a decision
 
+I would remove 3 and beyond because they do not add a significant enough more explanation of the correlation. In terms of the visualization, the 2nd PCA represents the "elbow", at which it levels off.
+
 ## Part II
 
 ```{r}
@@ -89,7 +96,12 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -105,12 +117,149 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
+#This represents how much the PC explains that variable. The higher value, the more that PC explains the variable. For example, since prior_percent_correct and mean_confidence are below .1, the PC1 does not explain much variance in those variables for students. This might mean that this PC represents students problems attempted and how many hints were needed. But for PC2, mean_hint, mean_attempt, and mean_confidence are not explained much, meaning this PC might represent better previous attempts and the current attempted problems.
+
+
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+Comp <- as.matrix(D2) %*% loadings
+Comp2 <- cbind(Comp, as.data.frame(D1$mean_correct))
+colnames(Comp2) <- c("prior_prob_count", "prior_prob_corrent", "problems_attempted", "mean_hint", "mean_attempt", "mean_confidence", "mean_correct")
+
+CompCOR <- cor(Comp2)
+
+corrplot(CompCOR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+#Loading the data
+H  = read.csv("humor_data.csv")
+
+#removing Q 33 - 36 (which is based on the results to the questions)
+H1 <- H[, -(33:36)]
+
+H2 <- scale(H1, center = TRUE)
+```
+
+## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+
+```{r}
+
+#Generate pairwise correlations
+H_COR <- cor(H2)
+
+
+corrplot(H_COR, order="original", method="circle", tl.pos="lt", type="upper", 
+        tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank", main="Principle Component Table")
+
+#The table has too many variables to be very useful, lets try representing it a different way.
+
+
+corrplot(H_COR, order="original", method="circle", tl.pos="lt", type="upper",
+        tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col=NULL, addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank", main="Principle Component Table")
+
+#Removing the numbers makes it easier to read. Larger circles represent higher absolute values for PCA.
+
+```
+
+
+## Run the PCA
+
+## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+
+H_pca <- prcomp(H2, scale = TRUE)
+
+H_pca$sdev
+
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+
+H_pca$sdev^2
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+
+summary(H_pca)
+
+#We can look at this to get an idea of which components we should keep and which we should drop
+
+plot(H_pca, type = "lines", main = "PCA for Humor - Line Graph")
+
+```
+
+## Think about which components you would drop and make a decision
+
+There are two "elbows" in this graph. I would remove 7 and beyond because, while it is the second elbow, there seems to be enough of a difference between 5 and 6 to include them.
+
+
+```{r}
+#Adding the HSQ, for comparison to PCA
+
+H3 <- as.data.frame(H_pca$x)
+H3 <- H3[1:6]
+H4 <- cbind(H3, as.data.frame(H[33:36]))
+
+H_COR2 <- cor(H4)
+
+corrplot(H_COR2, order="original", method="circle", tl.pos="lt", type="upper",
+        tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#As you can see, the PC1 has a huge correlation to the humor styles. By the time we get to PC5, we see it mostly represents the aggressive style, with PC6 explaining a very limited amount.
+
+
+
+H_pca2 <- prcomp(H4, scale = TRUE)
+plot(H_pca2, type ="lines")
+
+
+H_pca2$rotation
+
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+
+## Now print out the eigenvectors (often called loadings) for the components you generated:
+
+H_loadings <- abs(H_pca$rotation[, (1:6)]) #abs() will make all eigenvectors positive
+
+sweep(H_loadings, 2, colSums(H_loadings), "/")
+
+biplot(H_pca2,
+        cex = c(1,0.5),
+       arrow.len = 0.05,
+       xlim = c(-0.125, 0.125),
+       ylim=c(-0.08, .08),
+       xlabs = rep("", nrow(H4)),
+       main = "Humor Style PCA")
+
+#Based on this biplot, we should focus on the cluster of arrows in the upper right of the center.
+
+biplot(H_pca2,
+        cex = c(1,0.5),
+       expand=10,
+       arrow.len = 0.05,
+       xlim = c(-0.1, .75),
+       ylim=c(-0.1, .8),
+       xlabs = rep("", nrow(H4)),
+       main = "Humor Style PCA - Zoomed In")
+
+#Based on this new biplot, we can see that Self-Defeating and Aggressive are correlated and PC5 explains that the most of all the PC
+
+```
+
+
+
