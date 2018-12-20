@@ -16,11 +16,15 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+D1 <- read.csv("Assistments-confidence.csv")
 
   #We won't need the id variable, so remove that.
 
-
+D1 <- select(D1, -id)
 ```
 
 ## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
@@ -33,10 +37,12 @@ library(corrplot)
 #Generate pairwise correlations
 COR <- cor(D1)
 
+tiff("COR.tiff",units="in",width=5, height=5, res=300)
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
+dev.off()
 
 #Study your correlogram image and save it, you will need it later
 ```
@@ -44,7 +50,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- as.data.frame(select(D1,-mean_correct))
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -76,6 +82,8 @@ plot(pca, type = "lines")
 
 ## Think about which components you would drop and make a decision
 
+The first four components explain 78.87% of the variation of the data. I would consider to drop last two components to make a dicision.
+
 ## Part II
 
 ```{r}
@@ -89,7 +97,14 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+tiff("COR2.tiff",units="in",width=5, height=5, res=300)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+dev.off()
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
