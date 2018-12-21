@@ -16,10 +16,12 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+library(tidyr)
+library(dplyr)
+D1 <- read.csv("Assistments-confidence.csv")
+View(D1)
   #We won't need the id variable, so remove that.
-
+D1 <- D1[,-1]
 
 ```
 
@@ -33,18 +35,20 @@ library(corrplot)
 #Generate pairwise correlations
 COR <- cor(D1)
 
+pdf("correlogram.pdf")
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
+dev.off()
 #Study your correlogram image and save it, you will need it later
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -89,7 +93,7 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -114,3 +118,21 @@ biplot(pca)
 ```
 # Part III  
 ## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. Can you perform a PCA on this data?
+
+```{r}
+K1 <- read.csv("humor_data.csv")
+K1 <- K1[,1:32]
+COR3 <- cor(K1)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+        tl.col="black", tl.cex=1.9, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+K2 <- scale(K1, center = TRUE)
+PCA <- prcomp(K2, scale = TRUE)
+plot(PCA, type = "lines")
+K3 <- as.data.frame(PCA$x)
+K3 <- K3[,1:5]
+biplot(PCA)
+
+```
+
