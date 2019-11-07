@@ -1,6 +1,8 @@
 ---
-title: "Principle Component Aanalysis"
+title: "Principal Component Aanalysis - Hsiao Ting Yang"
 output: html_document
+
+
 ---
 ## Data
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
@@ -16,10 +18,13 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library("dplyr")
+
+D1 <- read.csv("Assistments-confidence.csv", header = TRUE)
+
+D1 <- subset(D1, select = -id)
 
   #We won't need the id variable, so remove that.
-
 
 ```
 
@@ -44,7 +49,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- subset(D1, select = -mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -81,7 +86,7 @@ plot(pca, type = "lines")
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,11 +94,19 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
 
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+  
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
+## Comment
+
+For PC1, there is a high correlation with problem attempted, hint used, and attempts on math problems. This could potentially mean that students are persistant at trying the math problems and trying to get it correct.
 ```{r}
 pca$rotation
 
@@ -111,8 +124,35 @@ biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+D2a <- as.matrix(D2) %*% pca$rotation
+
 ```
 # Part III  
 
-## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to another TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+
+## Comment
+I will take a look at PC1 since that has the most variation. Taking a look at PC1, Change Leadership, Economics and Education, and Education Policy has the highest correlation. People probably selected these program to be most related on the survey because they are top down view of education and they any changes they make has an impact on education. 
+```{r}
+
+T1 <- read.csv("TCprograms.csv", header = TRUE, sep = " ")
+
+T1 <- subset(T1, select = -program)
+
+pca <- prcomp(T1, scale = TRUE)
+
+pca$sdev
+
+pca$sdev^2
+
+summary(pca)
+
+plot(pca, type = "lines")
+
+pca$rotation
+
+biplot(pca)
+
+```
+
 
