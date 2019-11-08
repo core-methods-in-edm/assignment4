@@ -164,7 +164,7 @@ pca1 <- prcomp(A2, scale = TRUE)
 pca1$sdev
 pca1$sdev^2
 
-pca1$rotation
+pca1$rotation 
 
 pca2<- as.data.frame(pca1$rotation)
 
