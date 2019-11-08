@@ -1,6 +1,11 @@
 ---
-title: "Principle Component Aanalysis"
-output: html_document
+title: "Principal Component Aanalysis Response"
+author: "Timothy Lee"
+date: "04/11/2019"
+output:
+  pdf_document: default
+  html_document: default
+  html_notebook: default
 ---
 ## Data
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
@@ -15,28 +20,39 @@ The data you will be using comes from the Assistments online intelligent tutorin
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
 
 ## Start by uploading the data
-```{r}
-D1 <- 
 
-  #We won't need the id variable, so remove that.
+```{r message = FALSE}
+#Probably going to need this
+library(tidyverse)
+```
 
 
+```{r message = FALSE}
+#Read in the data
+#We won't need the id variable, so remove that.
+D1 <- read_csv("Assistments-confidence.csv") %>% select(-id)
 ```
 
 ## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
 library(corrplot)
 
 #Generate pairwise correlations
 COR <- cor(D1)
 
-corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
-tl.col="black", tl.cex=0.6, tl.srt=45, 
-        addCoef.col="black", addCoefasPercent = TRUE,
-        sig.level=0.50, insig = "blank")
+corrplot(COR,
+         order = "AOE",
+         method = "circle",
+         tl.pos = "lt",
+         type = "upper",
+         tl.col = "black",
+         tl.cex = 0.6,
+         tl.srt = 45,
+         addCoef.col = "black",
+         addCoefasPercent = TRUE,
+         sig.level = 0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
 ```
@@ -44,9 +60,9 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- select(D1, -mean_correct)
 
-#The, scale and center your data for easier interpretation
+#Then, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
 ```
 
@@ -59,37 +75,50 @@ pca <- prcomp(D2, scale = TRUE)
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
 
 ```{r}
+#$sdev gives the standard deviations of the principal components
 pca$sdev
 
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
-
 pca$sdev^2
 
 #A summary of our pca will give us the proportion of variance accounted for by each component
-
 summary(pca)
 
 #We can look at this to get an idea of which components we should keep and which we should drop
-
 plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+
+*Probably PC6, but given the next code chunk, I think most would take that back*
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
-D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+D4 <- cbind(D3, as.data.frame(D1$mean_correct)) %>% rename("mean_correct" = "D1$mean_correct")
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+#Generate pairwise correlations
+COR2 <- cor(D4)
+
+corrplot(COR2,
+         order = "AOE",
+         method = "circle",
+         tl.pos = "lt",
+         type = "upper",
+         tl.col = "black",
+         tl.cex = 0.6,
+         tl.srt = 45,
+         addCoef.col = "black",
+         addCoefasPercent = TRUE,
+         sig.level = 0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -104,15 +133,179 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+#PC1 - Mean hint (most), followed by mean_attempt (this is correlated with mean hint), and problems_attempted. PC1 
+# represents how much people are trying questions.
+#PC2 - Prior % correct, with some prior prob count. Seems to represent student prior competence.
+#PC3 - Mean confidence, with some prior pro count and mean attempt. Probably confidence, related to competence and
+# previous experience.
+#PC4 - Prior prob count, and mean confidence - rest of variation from these, left by PC2 and 3
+#PC5 - Problems attempted and mean attempt. Rest of variation from these left by of PC1.
+#PC6 - Mean hint, with a little smattering of everything else. Given that PC6 is related to mean correct, and mean
+# hint has already shown up in PC1, PC6 likely represents variation in hints/hint-use that actually lead to more 
+# correct responses among learners, whereas PC1's mean-hint reflects experience in using them to make one's life easier.
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
+```
 
+```{r}
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+student_on_components <- D2 %*% pca$rotation
+
+student_on_pc_outcome <- cbind(student_on_components, as.data.frame(D1$mean_correct)) %>% rename("mean_correct" = "D1$mean_correct")
+
+COR_student_on_pc_outcome <- cor(student_on_pc_outcome)
+
+corrplot(COR_student_on_pc_outcome,
+         order = "AOE",
+         method = "circle",
+         tl.pos = "lt",
+         type = "upper",
+         tl.col = "black",
+         tl.cex = 0.6,
+         tl.srt = 45,
+         addCoef.col = "black",
+         addCoefasPercent = TRUE,
+         sig.level = 0.50, insig = "blank")
 ```
+
+
 # Part III  
 
-## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to another TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
+*The underlying structure of the data is a square matrix of 68 programs x 68 programs. Each program is listed as a column name and in the column "program". The numbers in the cells represent the number of people who said that the programs of the row and column which the cell is in are related. This includes the diagonals, instances where the row and column refer to the same program*
+
+```{r message = FALSE}
+#Read in space delimited data
+TCprograms <- read_table2("TCprograms.csv")
+```
+
+```{r}
+#Get rid of all those annoying dots and quotes
+colnames(TCprograms) <- str_remove_all(string = colnames(TCprograms), pattern = '"') %>%
+                          str_replace_all(pattern = "\\.", replacement = "_")
+TCprograms$program <- str_remove_all(string = colnames(TCprograms), pattern = '"') %>%
+                        str_replace_all(pattern = "\\.", replacement = "_")
+
+#Remove program field, Remove program row
+programs_only <- filter(TCprograms, program != "program")
+programs_numbers_only <- select(programs_only, -program)
+
+#Recode diagonals as 0?
+#diag(programs_numbers_only) <- 0
+```
+
+
+```{r}
+#Generate pairwise correlations
+COR_programs <- cor(programs_numbers_only)
+
+corrplot(COR_programs,
+         order = "AOE",
+         method = "circle",
+         tl.pos = "lt",
+         type = "lower",
+         tl.col = "black",
+         tl.cex = 0.5,
+         tl.srt = 45,
+         addCoef.col = "black",
+         addCoefasPercent = TRUE,
+         sig.level = 0.50, insig = "blank",
+         number.cex = 0.1
+         )
+```
+
+
+```{r}
+#Then, scale and center your data for easier interpretation
+programs_scaled <- scale(programs_numbers_only, center = TRUE)
+
+#Fix diagonals to 1, because there should be full correspondence between something and itself. This is not reflected
+#well in the data because not everyone got an option to select something on the diagonal.
+diag(programs_scaled) <- 1
+
+```
+
+```{r}
+#PCA
+pca_programs <- prcomp(programs_scaled, scale = TRUE)
+
+#A summary of our pca will give us the proportion of variance accounted for by each component
+pca_programs_summary <- summary(pca_programs)
+
+#Plot Cumulative proportion of variance accounted for against component
+plot(pca_programs_summary$importance[3, ],
+     type = "lines",
+     main = "Cumulative proportion of variance accounted for against component",
+     xlab = "Component number",
+     ylab = "Cumulative proportion of the variance"
+     )
+
+#Now, create a data frame of the transformed data from your pca.
+pca_programs_df <- data.frame(pca_programs$x)
+```
+
+*What we want to do here is to get the loadings of each program on the PCs, then find which ones contribute the most/least to the PC.*
+
+*It should be the case that programs with high loadings onto the same PC are 'related programs' since the same component captures a larger degree of variation in both/all these programs. The PC is then a 'component of related programs'.*
+
+*It is also worth looking at the programs with the lowest loadings onto the same PC as they're likely 'related programs' insofar as the same component fails to capture much variation in these programs. The PC is then also a 'component of related programs'*
+
+```{r}
+#Get original feature loadings on principal components
+loadings_programs <- abs(pca_programs$rotation) #abs() will make all eigenvectors positive
+
+#sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+loadings_programs_df <- as.data.frame(sweep(loadings_programs,
+                                            2,
+                                            colSums(loadings_programs),
+                                            "/")
+                                      ) 
+
+#Define blank data frame
+components_by_related_program <- data.frame(initialise = matrix(NA, nrow = 68, ncol = 1))
+
+#Get the PC names to build a for loop
+PCs <- colnames(loadings_programs_df)
+
+#Add the program names as a column instead of rownames to stop them disappearing when using dplyr functions
+loadings_programs_df <- rownames_to_column(loadings_programs_df, "programs")
+
+#For loop to iterate through the PCs, sort them in descending order, and return the most highly weighted programs to append to our data frame
+for (column in PCs) {
+  sorted_programs <- arrange(loadings_programs_df, desc(!!sym(column)))
+  components_by_related_program <- cbind(components_by_related_program, sorted_programs$programs, stringsAsFactors = FALSE)
+}
+
+#clean the output df
+components_by_related_program <- components_by_related_program[, -1]
+colnames(components_by_related_program) <- PCs
+```
+
+```{r}
+components_by_related_program
+```
+
+
+Just looking at the highest loading programs in the first few PCs, a few suggestions on why the most loaded factors are together:
+
+* PC1 - Economics, Policy, Principals, Politics, Org Psych are people, disciplines, or processes related to CHANGE.
+* PC2 - Body/Physical/Medical things.
+* PC3 - HUD things. Math is up there because analytics (HUDK) and stats (HUDM) are mathy. Lower down the list are MSTU stuff and Neuroscience which relate to the CogSci program. Clearest signal here, probably because these are the programs people are familiar with.
+* PC4 - Language things.
+* PC5 - ???
+* PC6 - ???
+
+Looks like things get pretty iffy after 4.
+
+Looking at the lowest loading programs in the first few PCs, a few suggestions on why the least loaded factors are together:
+
+* PC1 - Small picture things relating to concrete subject studies, or specialised instruction. Opposed to 'big picture' of the highest loadings in this component.
+* PC2 - Abstract things like dance, reading, gifted education, as opposed to concrete body physical things of the highest loadings in this component. Though this pattern is far from clean - motor learning and control has the 2nd lowest loading, and dance arguably has a physical aspect.
+* PC3 - Qualitative disciplines. Some people may have viewed these disciplines as qualitative fields (history, sociology, spirituality, sociology, linguistics) and the highest loadings as quantitative fields (stats, math, analytics).
+* PC4 - Applied psychology and behaviour. Somehow seen to be very different from language things.
+* PC5 - ???
+* PC6 - ???
