@@ -16,8 +16,8 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+D1 <- read.csv("Assistments-confidence.csv")
+D1 <- D1[,-1]
   #We won't need the id variable, so remove that.
 
 
@@ -29,7 +29,7 @@ D1 <-
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
 library(corrplot)
-
+library(dplyr)
 #Generate pairwise correlations
 COR <- cor(D1)
 
@@ -44,7 +44,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <-  D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -75,21 +75,27 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+Combine the result of PCA and plot, I will drop PC3, PC4, PC5 and PC6.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- data.frame(pca$x[,1:2])
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+# yes, I would have lost some important information about mean_correct.
+COR2 <- cor(D4)
 
-COR2 <- 
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -102,8 +108,10 @@ pca$rotation
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
-
+prop.table(x = loadings, margin = 2)
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+# PC1 mostly influenced by problems_attempted, mean_hint and mean_attempt, it represents  the status of student in current session.
+# PC2 mostly influenced by prior_prob_count and prior_percent_correct, it represents the status of student prior to this session.
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
@@ -115,4 +123,21 @@ biplot(pca)
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+```{r}
+dt1 <- read.csv("TCprograms.csv",sep = "")
+rownames(dt1) <- dt1$program
+dt1<- dt1[,-1]
+pca3 <- prcomp(dt1, scale = TRUE)
+summary(pca3)
+plot(pca3, type = "lines")
+loadings2 <- abs(pca3$rotation)
+loadings3 <- data.frame(prop.table(x = loadings2, margin = 2))
+loadings3[,1:4]
+# According to the loadings,we can see some relationships,
+# Group 1(Leadership programs): Change.Leadership, Politics, Economics.and.Education, Leadership, Arts.Administration
+# Group 2(Social Science programs):Social.Studies, Reading, Communication.Media.and.Learning.Technologies, Measurement..Evaluation.and.Statistics.
+# Group 3:History, Philosophy,Education.Leadership,Teaching.English,Adult.Education,Deaf.and.Hard.of.Hearing. 
+# Group 3 does not make much sense.
+# Group 4(Psychology programs):Developmental.Psychology,Psychology, Clinical.Psychology
 
+```
