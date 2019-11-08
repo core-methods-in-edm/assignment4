@@ -153,7 +153,7 @@ A1<- TCprograms[,c(-1, -69)]
 
 
 COR3 <- cor(A1)
-corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+g1<-corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
         tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")

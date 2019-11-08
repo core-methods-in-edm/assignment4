@@ -463,7 +463,7 @@ D3 &lt;- as.data.frame(pca$x)
 
 #Attach the variable &quot;mean_correct&quot; from your original data frame to D3.
 
-D4 &lt;- cbind(D3, as.data.frame(D1$mean_correct))
+D4 &lt;- cbind(D3, as.data.frame(D1$mean_correct)) 
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
@@ -539,7 +539,7 @@ TCprograms &lt;- read_table2(&quot;TCprograms.csv&quot;)</code></pre>
 
 
 COR3 &lt;- cor(A1)
-corrplot(COR3, order=&quot;AOE&quot;, method=&quot;circle&quot;, tl.pos=&quot;lt&quot;, type=&quot;upper&quot;,        
+g1&lt;-corrplot(COR3, order=&quot;AOE&quot;, method=&quot;circle&quot;, tl.pos=&quot;lt&quot;, type=&quot;upper&quot;,        
         tl.col=&quot;black&quot;, tl.cex=0.6, tl.srt=45, 
         addCoef.col=&quot;black&quot;, addCoefasPercent = TRUE,
         sig.level=0.50, insig = &quot;blank&quot;)</code></pre>
