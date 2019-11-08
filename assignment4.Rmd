@@ -1,11 +1,11 @@
 ---
-title: "Principle Component Aanalysis Response"
+title: "Principal Component Aanalysis Response"
 author: "Timothy Lee"
 date: "04/11/2019"
 output:
-  html_notebook: default
   pdf_document: default
   html_document: default
+  html_notebook: default
 ---
 ## Data
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
