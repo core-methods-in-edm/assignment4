@@ -130,15 +130,13 @@ prop.table(loadings, 2)
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
-c <- select(as.data.frame(pca$rotation), PC1:PC3)
-
 
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 ```{r}
-TC <- TCprograms
+TC <- as.data.frame(read.table("TCprograms.csv", header = TRUE))
 TC <- TC[,-1]
 TC <- scale(TC, center = TRUE) 
 pca1 <- prcomp(TC, scale = TRUE)
