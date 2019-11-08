@@ -18,7 +18,7 @@ The data you will be using comes from the Assistments online intelligent tutorin
 ```{r}
 D1 <- read.csv("Assistments-confidence.csv")
 
-  #We won't need the id variable, so remove that.
+  #We won't need the id variable, so remove that. 
 D1<- D1[,-1]
 
 ```
