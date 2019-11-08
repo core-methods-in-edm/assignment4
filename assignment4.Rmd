@@ -130,6 +130,7 @@ prop.table(loadings, 2)
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+c <- select(as.data.frame(pca$rotation), PC1:PC3)
 
 
 ```
