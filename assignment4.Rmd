@@ -1,5 +1,5 @@
 ---
-title: "Principle Component Aanalysis"
+title: "Principle Component Analysis"
 output: html_document
 ---
 ## Data
@@ -16,9 +16,16 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+
+library(tidyr)
+library(dplyr)
+
+D1 <- read.csv("~/tmp/assignment4/Assistments-confidence.csv", header = TRUE)
 
   #We won't need the id variable, so remove that.
+
+D1<-D1%>%
+  select(-id)
 
 
 ```
@@ -44,7 +51,8 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1%>%
+  select(-mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -81,25 +89,34 @@ plot(pca, type = "lines")
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+
+D3 <- D1%>%
+  select(-c(mean_hint, mean_confidence))
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
-D4 <- cbind(D3, as.data.frame(D1$mean_correct))
-
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D3)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+D4<-scale(D3)
+pca2 <- prcomp(D4, scale = TRUE)
+
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
-pca$rotation
+pca2$rotation
 
 #Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
 
-loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+loadings <- abs(pca2$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
@@ -107,12 +124,53 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
-biplot(pca)
+biplot(pca2)
 
-#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+#Calculate values for each student that represent your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+# Directionality is a way to account for the similarity between variables. Eigenvalue (or the magnitude of the vector) is a measure of the variability accounted for by the variable.
 
 ```
+Directionality is a way to account for the similarity between variables. Eigenvalue (or the magnitude of the vector) is a measure of the variability accounted for by the variable. This is pretty cool.
+
+Taking that into consideration, I can see that my five selected variables all have fairly unique directionality, have moderate lengths, and my data is well clustered around a central point. Knowing this, I can feel comfortable in using my selected components to map out student performance.
+
 # Part III  
 
-## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to another TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
+```{r}
+
+library(dplyr)
+library(tidyr)
+
+TCprograms <- read.csv("~/tmp/assignment4/TCprograms.csv", sep="")
+
+rownames(TCprograms)<-TCprograms$program
+TCprograms<-TCprograms[order(rownames(TCprograms), colnames(TCprograms), decreasing = FALSE)]
+
+
+TCprograms1<-TCprograms%>%
+  select(-program)
+
+TCprograms1<-TCprograms1[1:(nrow(TCprograms)-1),]
+
+TCD1<-TCprograms1%>%
+  select(-cluster)
+
+pca3 <- prcomp(TCD1, scale = FALSE)
+
+loadings1 <- data.frame(abs(pca3$rotation))[,1:5] #abs() will make all eigenvectors positive
+
+TCD2<-sweep(loadings1, 2, colSums(loadings1), "/")
+
+```
+
+So if I understand this correctly, each Principle Component is on some level linearly correlated to the mapping of an orthogonal vector on the relationship between a course and what students believe to be a course related to this. Going off of this definition, ordering the pca$rotation by a the magnitude of a principle component allows you to group together majors with the extent to which they fall on an ordering of relatability. That is to say, if you order by Principle Component 1, A specific program of study will likely have some relationship with the programs of study adjacent to it- a visual review of the PCA rotational data frame after cleaning groups together the following classes according to Principle Component 1:
+
+- Change Leadership
+- Economics and Education
+- School Principles
+- Arts Administration
+
+The similarity in themes and language embedded within the program names suggests some degree of codirectionality, and a review of the existing cluster column in the inital dataframe reveals that all of them fall within the cluster. Taken together, this suggests that students perceive analogous motifs within these programs, at least as captured by their responses on the survey.
