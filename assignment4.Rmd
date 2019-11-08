@@ -101,7 +101,7 @@ D3 <- as.data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
-D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+D4 <- cbind(D3, as.data.frame(D1$mean_correct)) 
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
