@@ -14,16 +14,14 @@ The data you will be using comes from the Assistments online intelligent tutorin
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
 
-## Start by uploading the data
+Start by uploading the data
+
 ```{r}
-D1 <- 
-
-  #We won't need the id variable, so remove that.
-
-
+D1 <- read.csv("Assistments-confidence.csv", header = TRUE)
+D1 <- D1[, -1]
 ```
 
-## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
@@ -41,22 +39,22 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 #Study your correlogram image and save it, you will need it later
 ```
 
-## Create a new data frame with the mean_correct variables removed
+Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[, !(colnames(D1) %in% "mean_correct")]
 
-#The, scale and center your data for easier interpretation
+#Then, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
 ```
 
-## Now run the PCA on the new data frame
+Now run the PCA on the new data frame
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
 ```
 
-## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
 
 ```{r}
 pca$sdev
@@ -72,16 +70,19 @@ summary(pca)
 #We can look at this to get an idea of which components we should keep and which we should drop
 
 plot(pca, type = "lines")
+pca[["rotation"]]
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+
+Remove mean_confidence. Based on the graph, the drop in amount of variance between second and third variable is the smallest, and removing it from the data set will not affect reconstruction error. Only more variability in a particular direction correlates with explaining the behavior of the dependent variable. After dropping one of the components, we did not lose important information about mean_correct, but even make it more significant in being predicted.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- D2[, !(colnames(D2) %in% "mean_confidence")]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,10 +90,14 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
-
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
-## Now print out the eigenvectors (often called loadings) for the components you generated:
+
+Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
 pca$rotation
@@ -103,16 +108,66 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
-#Now examine your components and try to come up with substantive descriptions of what some might represent?
+```
 
+##Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+Based on the correlation graph, I concluded that mean_attempt has the highest correlation with mean_correct followed by prior_percent_correct. When evaluating mean_correct, we should include these two variables since they account for most of the variance in predicting the outcome.  
+
+```{r}
+summary(pca)
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
-biplot(pca)
+biplot(pca, cex = 1, expand=1.7, xlim=c(-0.25, 0.1), ylim=c(-0.1, 0.13))
 
-#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+#Calculate values for each student that represent your composite variables and then create a new correlogram showing their relationship to mean_correct.
+pca$x
 
+#altenatively: D6 <- as.matrix(D2) %*% pca$rotation
+D5 <- cbind(pca$x, as.data.frame(D1$mean_correct))
+COR3 <- cor(D5)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE, 
+         sig.level=0.50, insig = "blank")
 ```
+
 # Part III  
 
-## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+# Explain why you think there are relationships between these programs.
 
+Change Leadership program has the highest eigenvalue and a negative eigenvector in PC1, so if we are going to create a classification model to categprize types of the programs, change leadership variable might be useful. In PC2, Neuroscience, clinical psychology, and kinesiology are top 3 variables that contribute to PC2.
+
+```{r}
+A1 <- read.csv("TCprograms.csv", sep = "", header = TRUE)
+rownames(A1) <- A1$program
+A2 <- A1[, !(colnames(A1) %in% "cluster")]
+A2 <- A2[, -1]
+A3 <- scale(A2, center = TRUE)
+
+pca2 <- prcomp(A3, scale = TRUE)
+#pca2$sdev^2
+#summary(pca2)
+
+plot(pca2, type = "lines")
+#pca2$rotation
+
+loadings2 <- abs(pca2$rotation)
+test2 <- sweep(loadings2, 2, colSums(loadings2), "/") 
+biplot(pca2, cex = 0.5, expand=1.3, xlim=c(-0.6, 0.28), ylim=c(-0.23, 0.36))
+COR4 <- cor(A3)
+
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="full",        
+tl.col="black", tl.cex=0.3, tl.srt=45, addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+#some  random codes for myself
+#compute standard deviation of each principal component
+#std_dev <- pca2$sdev
+#compute variance
+#pr_var <- std_dev^2
+#check variance of first 10 components
+#pr_var[1:10]
+```
+
+##Question
+I altered the scale in Rmd file to make the graph look great, however in HTML, the plots look very different. How can I solve this problem? I posted a question on Stack Overflow but no one has answered me yet. 
