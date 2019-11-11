@@ -1,0 +1,97 @@
+---
+title: "Assgniment4"
+author: "yixiao"
+date: "2019/11/11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+D1 <- read.csv("Assistments-confidence.csv", header=TRUE)
+#We won't need the id variable, so remove that.
+D1$id <- NULL
+```
+
+```{r}
+#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+
+library(corrplot)
+
+#Generate pairwise correlations
+COR <- cor(D1)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#Study your correlogram image and save it, you will need it later
+```
+## Create a new data frame with the mean_correct variables removed
+
+```{r}
+library(dplyr)
+D2 <- D1 %>% select(-mean_correct)
+
+D2 <- scale(D2, center = TRUE)
+```
+## Now run the PCA on the new data frame
+
+```{r}
+pca <- prcomp(D2, scale = TRUE)
+```
+## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
+
+```{r}
+pca$sdev
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+pca$sdev^2
+#A summary of our pca will give us the proportion of variance accounted for by each component
+summary(pca)
+#We can look at this to get an idea of which components we should keep and which we should drop
+plot(pca, type = "lines")
+```
+```{r}
+## Part II
+
+#Now, create a data frame of the transformed data from your pca.
+D3 <- pca$x
+#Attach the variable "mean_correct" from your original data frame to D3.
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+```
+```{r}
+pca$rotation
+#Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
+loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+biplot(pca)
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+D5 <- as.matrix(D2) %*% pca$rotation
+```
+
+### Answer
+For PC1, it is highest correlation variation. It is strongly related to problems attempted, mean hint, and mean attempt. Students are trying to solve the problem persistently with reachable resources. 
+
+# Part III  
+
+## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+
+### Answer
+By sorting the value of PC1, Change leadership, Economics and Education, Education Policy, School Principals, and Social Organizational Psychology are the five programs most correlated to other programs based on what people selected. One explanation is that these programs have similar components covered as other programs. Or, they have broader definition that people consider them as overall related.
+
+```{r}
+TCp <- read.csv("TCprograms.csv", header=TRUE,sep=" ")
+TCp2 <- TCp
+TCp2$program = NULL
+TCp3 <- scale(TCp2, center = TRUE)
+pca <- prcomp(TCp3, scale = TRUE)
+pca$rotation
+biplot(pca)
+```
