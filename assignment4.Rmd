@@ -154,6 +154,16 @@ biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+#composite values
+D4
+COR3 <- cor(cbind(D2%*%loadings, D1$mean_correct)) 
+rownames(COR3) <- c("P1","PC2","PC3","PC4","PC5","PC6","mean_correct")
+colnames(COR3) <- c("P1","PC2","PC3","PC4","PC5","PC6","mean_correct")
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
 ```
 ## Interpreting PCs in Part 2
 
@@ -212,8 +222,9 @@ Ok, time for some PCA analysis
 ```{r}
 # run PCA
 TCpca <- prcomp(TC2, scale = TRUE)
+#summary(TCpca) #I'm not printing this in the HTML file since it's too big
 
-#let's see how each component accounts for the variance. I'm not going to print the summary here because it is really long. But I had I did have a look into it and I saw that only the first 4 components contribute to explaining more than 5% of the variance each. 
+#let's see how each component accounts for the variance. I'm not going to print the summary here because it is really long. But I had I did have a look into it and I saw that only the first 4 components which contribute to at 5% of the variance each (actualy PC4 accounts for 4.9%, but I will include it anyway). 
 
 # So let's print the eigenvector for those first 4 PCs and let's try to interpret them. 
 
@@ -222,7 +233,7 @@ TCpca$rotation[,1:4]
 ```
 
 
-## PC1 - Social Sciences and Leadership dimension
+## PC1 - Social Sciences and Leadership dimension (10.7% of variance)
 
 We print below the 10 programs with largest positive weight for PC1 (honestly, looking into negative weights seems quite weired here - there is no meaning in being "oposite" to a given subject, and I decided to restrict my analysis to postive coeficients).
 
@@ -235,7 +246,7 @@ names(TCpca$rotation[order(-TCpca$rotation[,1]),1][1:10])
 
 ```
 
-## PC2 - Psychology-and-Health dimension
+## PC2 - Psychology-and-Health dimension (8.1% of variance)
 
 We print below the 10 programs with largest positive weight for PC2.
 
@@ -248,7 +259,7 @@ names(TCpca$rotation[order(-TCpca$rotation[,2]),2][1:10])
 
 ```
 
-## PC3 - The-future-of-Ed-dimension (hooray!)
+## PC3 - The-future-of-Ed-dimension (6.2% of variance) 
 We print below the 10 programs with largest positive weight for PC3.
 
 We finally found something that has some relationship with our initial exploratory analysis. This dimension includes in its 10 most relevant positive variables almost exclusively technology-related programs. The only exceptions here are "cognitive science" and "mathematics". 
@@ -260,7 +271,7 @@ names(TCpca$rotation[order(-TCpca$rotation[,3]),3][1:10])
 
 ```
 
-## PC4 - The non-teacher-education-dimension
+## PC4 - The non-teacher-education-dimension (4.9% of variace)
  
 This componet seemed quite hard to interpretate, as it shows a combination of elements related to the dimensions PC1 and PC2 such as  "Leadership", "Sociology", "Politics", "Change.Leadership", "Physiology", "Economics.and.Education", "Health.Education", and"Nursing". In this case, I did get curious to see what were the largest negative weights. Interestingly, some coherence around the topic of "tecaher education" shows up. This is the case for "English.Education", "Teaching.English", "Literacy", "Bilingual.Bicultural.Education", "Reading", and "Early.Childhood.Special.Education". So I suggest that this dimension might be interpreted as the "non-teacher-education" dimension! To me, this actually makes some sense once we remember that this data is from Teachers College. At this school Teacher Ed. vs. Non-Techer Ed. is indeed a meaningful divider.
 
