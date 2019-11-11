@@ -1,6 +1,8 @@
 ---
 title: "Principle Component Aanalysis"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 ## Data
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
@@ -16,10 +18,15 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+```
 
+```{r}
+D1 <- read.csv("~/Desktop/master fall/hudk4050/assignment4/Assistments-confidence.csv")
+D1 <- select(D1,-id)
   #We won't need the id variable, so remove that.
-
 
 ```
 
@@ -44,7 +51,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- select(D1,-mean_correct)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -54,6 +61,7 @@ D2 <- scale(D2, center = TRUE)
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
+pca
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -75,13 +83,14 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+I would remove pc6 since it has lowest proportion of variance and standard deviation.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,7 +98,12 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -101,8 +115,8 @@ pca$rotation
 
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
-sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
-
+ #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+sweep(loadings, 2, colSums(loadings), "/")
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
@@ -116,3 +130,37 @@ biplot(pca)
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
+```{r}
+library(readr)
+TC1 <- read_table2("~/Desktop/master fall/hudk4050/assignment4/TCprograms.csv")
+TC1 <- as.data.frame(TC1)
+colnames(TC1) <- gsub('"', '', colnames(TC1))
+TC1$program <- gsub('"','',TC1$program)
+TC2 <- select(TC1,-program)
+TC2 <- scale(TC2, center = TRUE)
+COR_TC1 <- cor(TC2)
+corrplot(COR_TC1, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.4, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+```
+```{r}
+pca_tc <- prcomp(TC2, scale = TRUE)
+pca_tc$sdev
+summary(pca_tc)
+plot(pca_tc, type = "lines")
+```
+ 
+
+```{r}
+TC3 <- data.frame(pca_tc$x)
+COR_TC2 <- cor(TC3)
+corrplot(COR_TC2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+##Absolute values near zero indicate that a variable contributes little to the component, whereas larger ##absolute values indicate variables that contribute more to the component. we can see that most programs are ##not close to zero with others. 
+loadings1 <- abs(pca_tc$rotation) 
+sweep(loadings1, 2, colSums(loadings), "/")
+biplot(pca_tc)
+```
