@@ -135,6 +135,12 @@ library(dplyr)
 loadings <- abs(pca$rotation) 
 loadings <-as.data.frame(loadings)
 loadings1 <- arrange(loadings,desc(PC1,PC2,PC3,PC4))
+install.packages("corrplot")
+library("corrplot")
+CORa <- cor(P3)
+corrplot(CORa, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.3, tl.srt=45, addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 #how to keep the major names here?
 biplot(pca)
 #Through looking at the loadings, I found the PC1 is related to leadership, like Change.Leadership, Economics and Education,Education Policy and School.Principals.
