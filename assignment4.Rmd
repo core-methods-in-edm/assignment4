@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("Assistments-confidence.csv")
+D1 <- D1[, -1]
 
-  #We won't need the id variable, so remove that.
-
+#We won't need the id variable, so remove that.
 
 ```
 
@@ -28,6 +28,7 @@ D1 <-
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
+##install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,10 +45,13 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[, -4]
 
 #The, scale and center your data for easier interpretation
+
 D2 <- scale(D2, center = TRUE)
+
+
 ```
 
 ## Now run the PCA on the new data frame
@@ -75,24 +79,35 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+A: PC4, PC5, and PC6 will be dropped for two reasons. First, they are dropped based on the elbow method. Second, according to the PCA, I drop the components whose variance is less than 1.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
-
-D3 <- 
-
+library(dplyr)
+library(tidyr)
+D3 <- as.data.frame(pca$x)
+D3 <- select(D3, PC1:PC3)
+                                                        
 #Attach the variable "mean_correct" from your original data frame to D3.
 
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+##A: Yes, some information will be lost after dropping components. For example, there is a strong negative correlation between mean-correct and mean_hint in the original data. However, after dropping PC4, PC5, and PC6, only positive correlations be shown.
+
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
-## Now print out the eigenvectors (often called loadings) for the components you generated:
+## Now print out the eigenvectors (often called loadings) for the components you generated
+
 
 ```{r}
 pca$rotation
@@ -101,18 +116,54 @@ pca$rotation
 
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
-sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+a <- sweep(loadings, 2, colSums(loadings), "/")#sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+
+d <- prop.table(loadings, 2)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+##A: PC1 includes relatively large proportions of problems_attempted, mean_hint, and mean_attempt, representing the status in the current session.
+## PC2 includes relatively large proportions of prior_prob_count and prior_percent_correct, representing the status of the experience prior to this session.
+## PC3 includes relatively large proportions of mean_confidence and prior_prob_count. However, it is not clear what is the meaning of PC3. Personally, it could represent the confidence students have in their ability in the current session, because almost the half proportion of PC3 consists of mean_confidence.
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+D5 <- as.matrix(D2)
+D5 <- as.data.frame(D5 %*% d)
+D5 <- select(D5, PC1:PC3)
+D5$mean_correct <- D1$mean_correct
+COR3 <- cor(D5)
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+```{r}
+TC <- as.data.frame(read.table("TCprograms.csv", header = TRUE))
+TC <- TC[,-1]
+TC <- scale(TC, center = TRUE) 
+pca1 <- prcomp(TC, scale = TRUE)
+DF1 <- as.data.frame(pca1$rotation)
+TCloading <- abs(pca1$rotation)
+biplot(pca1)
 
+b <- prop.table(TCloading, 2)
+
+```
+
+#A: According to the loadings, we could observe some relationships among different programs, and possible meanings of PCs. Here are some examples. (Because there are no apparent differences among components, I am not able to drop some  of them.) The basic rule based on to classify the group is the proportions of each program in the components.
+PC1 (Policy & Leadership): Change Leadership, Politics, Economics and Education, Education Policy, School Principals, Social Organizational Psychology, Leadership, Arts Administration, Cooperation and Conflict Resolution, Private School Leadership
+PC2 (Human Health): Kinesiology, Clinical Psychology, Physiology, Neuroscience, Health Education, Nursing, 
+PC3 (STEAM): Learning.Analytics, Cognitive Science, Mathematics, Design and Development of Digital Games, Measurement Evaluation and Statistics, Instructional Technology and Media, Education Technology, Creative Technologies, Communication Media and Learning Technologies
+PC4 (does not make any sense for me)
+PC5 (School & Education): Private School Leadership, Higher and Postsecondary Education, Counseling Psychology, Education Technology, Education Leadership, College Advising, Gifted Education, and so on.
+PC6 (does not make any sense for me)
+PC7 (Art): Communication Sciences and Disorders, Literacy, Anthropology, Linguistics
