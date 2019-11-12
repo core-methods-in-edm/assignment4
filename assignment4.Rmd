@@ -16,10 +16,11 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv('Assistments-confidence.csv')
 
   #We won't need the id variable, so remove that.
-
+library(dplyr)
+D1 <- select(D1, -1)
 
 ```
 
@@ -27,13 +28,13 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+#install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
 COR <- cor(D1)
 
-corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+Corr <- corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
@@ -44,7 +45,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- select(D1, -4)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -72,16 +73,23 @@ summary(pca)
 #We can look at this to get an idea of which components we should keep and which we should drop
 
 plot(pca, type = "lines")
+plot(pca)
+
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+```{r}
+library(dplyr)
+#I would remove components 5 and 6 as all the components before them already cover 77% of variance.
+newD1 <- D2[,1:4]
+```
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- as.data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,8 +97,12 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
 
+Corr <- corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
@@ -111,8 +123,44 @@ biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+
+
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+```{r}
+library(readr)
+TC <- read_table2("TCprograms.csv")
+TC <- select(TC, -1)
+install.packages("corrplot")
+library(corrplot)
+
+CORTC <- cor(TC)
+
+Corr <- corrplot(CORTC, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+TC2 <- scale(TC, center = TRUE)
+pcatc <- prcomp(TC2, scale = TRUE)
+pcatc$sdev
+
+
+pcatc$sdev^2
+
+
+summary(pcatc)
+
+plot(pcatc, type = "lines")
+pcatc$rotation
+
+TC3 <- as.data.frame(pcatc$rotation)
+biplot(pcatc)
+
+#PC1 shows quite high relation of the programmes within the field of Leadership, while the programmes in PC2 can be clustered into "Health sciences", as they also show significant relatedness to each other. Programmes in PC3 might be related to each other as most of them are connected to the educational technology field. Correlation between programmes in Pc4 is lower, but I would say that most of them are still related to social science. 
+
+
+```
+
 
