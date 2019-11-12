@@ -137,7 +137,7 @@ tc_removeprogram <- scale(tc_removeprogram, center = TRUE)
 corr_tc <- cor(tc_removeprogram)
 corrplot(corr_tc, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.4, tl.srt=45, 
-        addCoef.col="black", addCoefasPercent = TRUE,
+         addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 ```
 
@@ -154,7 +154,7 @@ TC <- data.frame(pca_tc$x)
 cor_tc2 <- cor(TC)
 corrplot(cor_tc2, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
-        addCoef.col="black", addCoefasPercent = TRUE,
+         addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
 loadings1 <- abs(pca_tc$rotation) 
