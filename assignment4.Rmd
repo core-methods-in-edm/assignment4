@@ -28,7 +28,7 @@ D1 <- D1[, -1]
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
-#install.packages("corrplot")
+##install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -50,6 +50,7 @@ D2 <- D1[, -4]
 #The, scale and center your data for easier interpretation
 
 D2 <- scale(D2, center = TRUE)
+
 
 ```
 
@@ -117,7 +118,7 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
 a <- sweep(loadings, 2, colSums(loadings), "/")#sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
-prop.table(loadings, 2)
+d <- prop.table(loadings, 2)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
@@ -130,6 +131,16 @@ prop.table(loadings, 2)
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+D5 <- as.matrix(D2)
+D5 <- as.data.frame(D5 %*% d)
+D5 <- select(D5, PC1:PC3)
+D5$mean_correct <- D1$mean_correct
+COR3 <- cor(D5)
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 # Part III  
@@ -142,16 +153,16 @@ TC <- scale(TC, center = TRUE)
 pca1 <- prcomp(TC, scale = TRUE)
 DF1 <- as.data.frame(pca1$rotation)
 TCloading <- abs(pca1$rotation)
-sweep(TCloading, 2, colSums(loadings), "/")
 biplot(pca1)
 
 b <- prop.table(TCloading, 2)
+
 ```
 
 #A: According to the loadings, we could observe some relationships among different programs, and possible meanings of PCs. Here are some examples. (Because there are no apparent differences among components, I am not able to drop some  of them.) The basic rule based on to classify the group is the proportions of each program in the components.
 PC1 (Policy & Leadership): Change Leadership, Politics, Economics and Education, Education Policy, School Principals, Social Organizational Psychology, Leadership, Arts Administration, Cooperation and Conflict Resolution, Private School Leadership
 PC2 (Human Health): Kinesiology, Clinical Psychology, Physiology, Neuroscience, Health Education, Nursing, 
-PC3 (STEM): Learning.Analytics, Cognitive Science, Mathematics, Design and Development of Digital Games, Measurement Evaluation and Statistics, Instructional Technology and Media, Education Technology, Creative Technologies, Communication Media and Learning Technologies
+PC3 (STEAM): Learning.Analytics, Cognitive Science, Mathematics, Design and Development of Digital Games, Measurement Evaluation and Statistics, Instructional Technology and Media, Education Technology, Creative Technologies, Communication Media and Learning Technologies
 PC4 (does not make any sense for me)
 PC5 (School & Education): Private School Leadership, Higher and Postsecondary Education, Counseling Psychology, Education Technology, Education Leadership, College Advising, Gifted Education, and so on.
 PC6 (does not make any sense for me)
