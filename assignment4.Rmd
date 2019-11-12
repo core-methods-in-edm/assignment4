@@ -141,40 +141,53 @@ D5<- read.table("TCprograms.csv", header = TRUE, sep = "")
 
 D6<-D5[,-1]
 
+D7<-scale(D6,center = TRUE)
+
 #Generate pairwise correlations
 
-COR3 <- cor(D6)
+COR3 <- cor(D7)
 
 #get the graph and make it 
 
-corrplot(COR3, order="AOE", method="square", tl.pos="lt", type="upper",        
-tl.col="green", tl.cex=0.1, tl.srt=20, 
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="full",        
+tl.col="black", tl.cex=0.5, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
-scale(D6,center = TRUE)
+
+#other graph and get corrplot
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.5, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
 
-pca3<- prcomp(D6, scale = TRUE)
+pca2<- prcomp(D7, scale = TRUE)
+
+pca2$sdev
 
 #get data frame 
 
-D7<- as.data.frame(pca3$rotation)
+pca2$sdev^2
 
 #summary them 
 
-summary(pca3)
+summary(pca2)
 
 # get the summary and plot 
 
-plot(pca3,type = "lines")
+plot(pca2,type = "lines")
+
+pca2$rotation
 
 #and have graph
 
+loadings2<-abs(pca2$rotation)
 
-D8<-D6[,-C(32,68)]
+sweep(loadings2,2,colSums(loadings),"/")
 
-D8<-D6[-C(33:69),]
+biplot(pca2)
 
 
 
