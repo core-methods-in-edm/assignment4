@@ -42,7 +42,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
         sig.level=0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
-install.packages("corrgram")
+
 library(corrgram)
 corrgram(D2)
 ```
