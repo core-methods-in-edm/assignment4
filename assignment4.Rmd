@@ -1,5 +1,5 @@
 ---
-title: "Principle Component Aanalysis"
+title: "Principle Component Aanalysis_Di Mao"
 output: html_document
 ---
 ## Data
@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read_csv("Assistments-confidence.csv")
 
   #We won't need the id variable, so remove that.
-
+newD1 <- D1[,-1]
 
 ```
 
@@ -29,6 +29,7 @@ D1 <-
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
 library(corrplot)
+plot(newD1)
 
 #Generate pairwise correlations
 COR <- cor(D1)
@@ -39,12 +40,15 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
         sig.level=0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
+#install.packages("corrgram")
+library("corrgram")
+corrgram(newD1)
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- newD1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -76,12 +80,15 @@ plot(pca, type = "lines")
 
 ## Decide which components you would drop and remove them from your data set.
 
+# Answer：I decide to drop the last three variables: mean_hit, mean_attempt, mean_confidence. 
+
+
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- D2[,1:3]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,7 +96,11 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -110,9 +121,35 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
-
+new_corr <- pca$x %*% t(pca$rotation)
+corrgram(new_corr)
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+
+I choose first 9 components, because their propotions of variance are larger than 0.03. There programs are related because they are either arts or humanities or both.
+```{r}
+program <- read.csv("TCprograms.csv",sep=" ")
+pca2 <- prcomp(program[,-1], scale = TRUE)
+pca2$rotation
+summary(pca2)
+
+T1 <- program[,-1]
+newT1 <- T1[,1:9]
+COR3 <- cor(newT1)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+corrgram(newT1)
+```
+These programs are related because they are all about arts and humanities.
+
+
+
+
+
+
 
