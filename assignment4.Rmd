@@ -1,6 +1,8 @@
 ---
 title: "Principle Component Aanalysis"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 ## Data
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
@@ -16,35 +18,36 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+D1 <- read.csv("Assistments-confidence.csv")
+D1 <- D1[,-1]
   #We won't need the id variable, so remove that.
 
 
 ```
 
 ## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
-
 ```{r}
-#You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
+# You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
-library(corrplot)
-
-#Generate pairwise correlations
+# Generate pairwise correlations
 COR <- cor(D1)
+library(corrplot)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",
+         addCoef.col="black", addCoefasPercent=TRUE,
+         sig.level=0.5, insig="blank")
 
-corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
-tl.col="black", tl.cex=0.6, tl.srt=45, 
-        addCoef.col="black", addCoefasPercent = TRUE,
-        sig.level=0.50, insig = "blank")
-
-#Study your correlogram image and save it, you will need it later
+# Study your correlogram image and save it, your will need it later
+# install.packages("corrgram")
+library(corrgram)
+corrgram(D1)
 ```
+
+
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -54,6 +57,7 @@ D2 <- scale(D2, center = TRUE)
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
+pca
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -75,22 +79,34 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+I will drop the 6th component from the data set, since the the cumulative proportion of 0.9107 of PC1, PC2, PC3, PC4 and PC5 is good enough. This means that 91.07% of the data can be explained by PC1, PC2, PC3, PC4 and PC5.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- pca$x[,1:3]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
-
-COR2 <- 
-
+library(corrplot)
+# pca$x and mean_correct scatterplots
+D5 <- cbind(pca$x, as.data.frame(D1$mean_correct))
+corrplot(cor(D5), order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+# scatterplots of mean_correct after deleting PC6 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+# From the scatterplots and correlations of pca$x and mean_correct, PC6 is correlated to mean_correct strongly. Therefore, dropping the last three components will loss important information about mean_correct. 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
@@ -105,14 +121,45 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
+# For PC1, the average number of hints and the average number of attempts are the most important elements. For PC2, the number of problems a student has answered and the percentage of problems a student has answered are the most important elements. For PC3, the average confidence each student has and the number of problems the student has attemped are the most important elements. For PC4, the number of problems a student has answered and the average confidence are the most important elements. For PC5, the number of problems the student has attempted and the average number of attempts are the most important elements. For PC6, the percentage of problems a student has answered correctly prior to this session and the average number of hints a student asked are the most important elements.
+
+
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+Va <- pca$x %*% t(pca$rotation)
+D6 <- cbind(Va, as.data.frame(D1$mean_correct))
+
+corrgram(D6)
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+## In the biplot, the related programs share similar keywords. For example, the bottom right corner shares "education" as a keyword. And the top right corner shares "psychology" as a keyword.
+```{r}
+P1 <- read.csv("TCprograms.csv", sep = "")
+rownames(P1) <- P1$program
+P1 <- P1[,-1]
+
+P2 <- scale(P1, center = TRUE)
+pca3 <- prcomp(P2, scale = TRUE)
+pca3$sdev
+pca3$sdev^2
+summary(pca3)
+
+plot(pca3, type = "lines")
+
+# Drop and remove PC7 - PC68
+pca3$x[,1:6]
+
+Va2 <- pca3$x[,1:6] %*% t(pca3$rotation[,1:6])
+corrgram(Va2, order = TRUE)
+biplot(pca3, cex = 0.4)
+
+```
+
+
 
