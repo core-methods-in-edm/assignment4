@@ -16,7 +16,8 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("/Users/liuxiaojue/Documents/2019datamining/assignment4/Assistments-confidence.csv",header=TRUE)
+D1<-D1[,-1]
 
   #We won't need the id variable, so remove that.
 
@@ -44,7 +45,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -53,6 +54,7 @@ D2 <- scale(D2, center = TRUE)
 ## Now run the PCA on the new data frame
 
 ```{r}
+#Principal Component Analysis (PCA) is a dimension-reduction tool that can be used to reduce a large set of variables to a small set that still contains most of the information in the large set.
 pca <- prcomp(D2, scale = TRUE)
 ```
 
@@ -75,13 +77,14 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+#According to cumulative proportion, we can use the variables from 1 to 5, which have cumulative proportion up to 91%. So we drop varibale mean_confidence.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- pca$x[,-6]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,7 +92,12 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <-  cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -115,4 +123,33 @@ biplot(pca)
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+
+#I drop the varibales from the 25th variable to 68th variablesa because the first twenty-four variables' cumulative proportion is up to 80%.
+
+```{r}
+L1 <- read.table("/Users/liuxiaojue/Documents/2019datamining/assignment4/TCprograms.csv",header=TRUE)
+L2<-L1[,-1]
+COR2 <- cor(L2)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="pink", tl.cex=0.1, tl.srt=20, 
+        addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+scale(L2,center = TRUE)
+pca2 <- prcomp(L2, scale = TRUE)
+
+g<-as.data.frame(pca2$rotation)
+g
+
+summary(pca2)
+
+
+plot(pca2, type = "lines")
+
+
+L3<-L2[,-c(25:68)]
+
+
+```
+
 
