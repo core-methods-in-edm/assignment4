@@ -1,6 +1,7 @@
 ---
 title: "Principle Component Aanalysis"
 output: html_document
+#Allison Teevan
 ---
 ## Data
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
@@ -16,10 +17,11 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(tidyverse)
+D1 <- read.csv("Assistments-confidence.csv")
 
   #We won't need the id variable, so remove that.
-
+D1$id <- NULL
 
 ```
 
@@ -27,7 +29,7 @@ D1 <-
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+#install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,10 +46,17 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1
+D2$mean_correct <- NULL
 
-#The, scale and center your data for easier interpretation
+#D2 <- D1[,-4]
+
+#Then, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
+#turns into matrix from dataframe
+
+D2 <- as.data.frame(D2)
+
 ```
 
 ## Now run the PCA on the new data frame
@@ -72,28 +81,49 @@ summary(pca)
 #We can look at this to get an idea of which components we should keep and which we should drop
 
 plot(pca, type = "lines")
+
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+#I decided to drop components 2-6.
 
 ## Part II
-
 ```{r}
-#Now, create a data frame of the transformed data from your pca.
+#weighted values. Decided that PC1 should be the only eigenvector included 
+D3 <- pca$x
 
-D3 <- 
+#Now, create a data frame of the transformed data from your pca.
+D3 <- as.data.frame(D3[,1])
+names(D3) <- c("PC1")
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
+#Generate pairwise correlations
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+##NOW TRY IT WITH ALL COMPONENTS
+D5 <- as.data.frame(pca$x)
+D5 <- cbind(D5, as.data.frame(D1$mean_correct))
+
+COR3 <- cor(D5)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#PC6 is very negatively correlated with mean_correct. We would not know this if we had removed it.
+#So maybe it's good to keep it.
 
 ```
-## Now print out the eigenvectors (often called loadings) for the components you generated:
 
+## Now print out the eigenvectors (often called loadings) for the components you generated:
 ```{r}
 pca$rotation
 
@@ -101,18 +131,59 @@ pca$rotation
 
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
-sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
+sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?) #scale by column 
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
+#graphically show PCA
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
 ```
 # Part III  
 
-## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to another TC program. 
+
+## Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+
+```{r}
+rm(list = ls())
+data <- read.csv("TCprograms.csv",header = TRUE, sep = " ")
+
+#move full name to be row name
+row.names(data) <- data$program
+data$program <- NULL
+
+#scale data
+data <- scale(data, center = TRUE)
+data <- as.data.frame(data)
+
+pca <- prcomp(data, scale = TRUE)
+
+plot(pca, type = "lines")
+#the plot doesn't have a clear elbow. Maybe it starts to even out at 6, so remove 6-10?
+```
+
+```{r}
+#note: Rotation = loadings = eigenvectors
+
+#weighted values.
+data2 <- pca$x
+
+#Now, create a data frame of the transformed data from your pca.
+data2 <- as.data.frame(data2[,1:5])
+
+pca$rotation
+loadings <- as.data.frame(abs(pca$rotation)) #abs() will make all eigenvectors positive
+sweep(loadings, 2, colSums(loadings), "/")
+
+biplot(pca)
+
+#ranking done manually by looking at data. It looks like there are maybe 5 groups:
+#Dance/Music/Physical Movement, Social Studies/Policy, things with Education in the title (like Educational Leadership), Psychology and behavioral sciences, reading/linguistics/literacy.
+
+```
 
