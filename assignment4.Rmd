@@ -14,6 +14,77 @@ The data you will be using comes from the Assistments online intelligent tutorin
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
 - mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
 
+```{r}
+
+##START HERE##
+library(tidyverse)
+
+dataset <- read.csv("Assistments-confidence.csv")
+D1 <- dataset[, -1]
+
+library(corrplot)
+# Generate pairwise correlations
+COR <- cor(D1)
+
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+
+D2 <- select(D1, "prior_prob_count", "prior_percent_correct", "problems_attempted",       
+             "mean_hint", "mean_attempt","mean_confidence")
+# Then, scale and center your data for easier interpretation
+D2 <- scale(D2, center = TRUE)
+# Now run the PCA on the new data frame
+pca <- prcomp(D2, scale = TRUE)
+pca$sdev
+pca$sdev^2
+summary(pca)
+plot(pca, type = "lines")
+
+# Now, create a data frame of the transformed data from your pca.
+D3 <- as.data.frame(D2)
+
+# Attach the variable "mean_correct" from your original data frame to D3.
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+         tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+
+pca$rotation
+loadings <- abs(pca$rotation)
+sweep(loadings, 2, colSums(loadings), "/")
+
+biplot(pca)
+#
+# Part III  
+#
+TC <- read.csv('TCprograms.csv', sep = " ")
+TC1 <- data.matrix(TC, rownames.force = NA)
+TC1 <- TC1[,1:68] # get rid of column 'cluster'
+CORTC <- cor(TC1)
+corrplot(CORTC, title = 'TC Programs Correlation',
+         method = "circle", tl.cex = 0.20, tl.col = 'purple',
+         order = "hclust", diag = FALSE)
+
+pcaPCTC <- princomp(CORTC)
+pcaTC <- prcomp(CORTC)
+
+pcaPCTC$sdev
+pcaPCTC$sdev^2
+summary(pcaTC)
+plot(pcaTC, type = 'barplot')
+
+biplot(pcaPCTC, title = 'Principal Component Analysis',
+       xlab = 'Classes', ylab = 'Classes', col = c('black','red'))
+
+```
+
+
+
 ## Start by uploading the data
 ```{r}
 D1 <- 
@@ -115,4 +186,5 @@ biplot(pca)
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+
 
