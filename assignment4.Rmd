@@ -16,8 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
 
+D1 <- read.csv("Assistments-confidence.csv")
+
+D1$id <- NULL
   #We won't need the id variable, so remove that.
 
 
@@ -44,7 +46,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[, -4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -75,13 +77,16 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+```{r}
+#Dropped PC4 and PC5
+```
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- D2[, -c(4:5)]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,30 +94,53 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+corrplot(COR2, order = "AOE", method = "color", tl.pos = "lt", type = "upper", tl.col = "black", tl.cex =0.5, tl.srt = 90, addCoef.col = "orange", addCoefasPercent = TRUE, sig.level = 0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
+```{r}
+pca2 <- prcomp(D4, scale = TRUE)
+
+```
+
 
 ```{r}
-pca$rotation
+pca2$rotation
 
 #Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
 
-loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
+loadings <- abs(pca2$rotation) #abs() will make all eigenvectors positive
 
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
-#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  0
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+matrix2 <-as.matrix(D2)
+composite <-matrix2 %*% pca$rotation
+
 ```
 # Part III  
+```{r}
+TCProgram<- read.csv("TCprograms.csv", sep = "")
+row.names(TCProgram) <- TCProgram$program
+TCProgram$program <-NULL
+
+TCProgram <-scale(TCProgram, center = TRUE)
+
+pcaTCProgram <-prcomp(TCProgram, scale = TRUE)
+
+summary(pcaTCProgram)
+plot(pcaTCProgram, type = "lines" )
+
+```
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
