@@ -16,8 +16,8 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+D1 <- read.csv("Assistments-confidence.csv")
+D1<-D1[,-1]
   #We won't need the id variable, so remove that.
 
 
@@ -39,12 +39,15 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
         sig.level=0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
+# install.packages("corrgram")
+library(corrgram)
+corrgram(D1)
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -73,15 +76,17 @@ summary(pca)
 
 plot(pca, type = "lines")
 ```
-
 ## Decide which components you would drop and remove them from your data set.
+```{r}
+## The 5th and 6th components should be dropped since cumulative proportions of PC5 and PC6 exceed 0.8.
+```
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- pca$x[,1:4]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,8 +94,20 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
+## If all componets are used
+D5<-cbind(pca$x,as.data.frame(D1$mean_correct))
+COR3 <- cor(D5)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+## I would have lost important information about mean_correct since PC6 has high correlation with mean_correct.
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
@@ -104,15 +121,60 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+## For PC1, mean_hint has the highest influence score.
+## For PC2, prior_percent_correct has the highest influence score.
+## For PC3, mean_confidence has the highest influence score.
+## For PC4, prior_prob_count has the highest influence score.
+## For PC5, mean_attempt has the highest influence score.
+## For PC6, mean_hint has the highest influence score.
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+## PC scores
+F1<-t(pca$rotation)
+F2<-pca$x
+F3<-F2 %*% F1
 
+F4<-cbind(F3,as.data.frame(D1$mean_correct))
+corrgram(F4)
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+```{r}
+T1<-read.csv("TCprograms.csv",sep="")
+rownames(T1)<-T1$program
+T2<-T1[,-1]
+T2<-T2[-69,]
+T2<-scale(T2,center=TRUE)
+pca2 <- prcomp(T2, scale = TRUE)
+
+pca2$sdev
+pca2$sdev^2
+summary(pca2)
+plot(pca2, type = "lines")
+## Drop and remove PC24 ~ PC68
+T3<-pca2$x[,1:23]
+T4<-pca2$rotation[,1:23]
+T5<-T3 %*% t(T4)
+COR4 <- cor(T5)
+corrgram(T5,order=TRUE)
+biplot(pca2, cex=0.4)
+## Related programs have same keywords. In the biplot, top right corner are programs containing "psychology" while bottom right corner are programs containing "education". 
+```
+
+```{r}
+## Choose PC1 ~ PC6
+A1<-pca2$x[,1:6]
+A2<-pca2$rotation[,1:6]
+A3<-A1 %*% t(A2)
+COR5 <- cor(A3)
+corrgram(A3,order=TRUE)
+heatmap(COR5)
+## In heatmap, topright corner programs are highly related, whose names contain "Psychology". Learning Analytics and Mathematics are highly related since they are quantative. Linguistics, Literacy and Bilingual Education are highly related since they are all related to language.
+```
+
 
