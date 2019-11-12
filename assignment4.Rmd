@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("~/Documents/GitHub/assignment4/Assistments-confidence.csv", header=TRUE)
 
   #We won't need the id variable, so remove that.
-
+D1 <- D1[,-1]
 
 ```
 
@@ -44,10 +44,11 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
+D2 <- as.data.frame(D2)
 ```
 
 ## Now run the PCA on the new data frame
@@ -75,25 +76,53 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
-
-## Part II
-
+## Now print out the eigenvectors (often called loadings) for the components you generated:
+components are NOT correlated with each other
 ```{r}
-#Now, create a data frame of the transformed data from your pca.
+library(tidyr)
+library(dplyr)
 
-D3 <- 
+#Now, create a data frame of the transformed data from your pca.
+D3 <- pca$x
+
 
 #Attach the variable "mean_correct" from your original data frame to D3.
-
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
+#yes? 
 
-COR2 <- 
+COR2 <- cor(D4)
 
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+D5 <- select(D4, 1:3)
+pca_2 <- prcomp(D5, scale = TRUE)
+pca_2$sdev
+pca_2$sdev^2
+summary(pca_2)
+plot(pca_2, type = "lines")
+D6 <- pca_2$x
+D7 <- cbind(D6, as.data.frame(D1$mean_correct))
+
+COR3 <- cor(D7)
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+loadings_2 <- abs(pca_2$rotation)
+sweep(loadings_2, 2, colSums(loadings_2), "/")
+biplot(pca_2)
 ```
-## Now print out the eigenvectors (often called loadings) for the components you generated:
 
+
+## Part II
 ```{r}
 pca$rotation
 
@@ -104,15 +133,45 @@ loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+#PC1, PC2, and PC4 represent something good, like fewer hints and attempts, but PC6 is prob the inverse of those and more
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
-#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+#Calculate values for each student that represent your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
+```{r}
+A1 <- read.csv("TCprograms.csv", header = TRUE, sep = " ")
+A1$program <- NULL
+
+pca_3 <- prcomp(A1, scale = TRUE)
+pca_3$sdev
+pca_3$sdev^2
+summary(pca_3)
+plot(pca_3, type = "lines")
+A2 <- pca_3$x
+
+loadings_3 <- abs(pca_3$rotation)
+loadings_3 <- as.data.frame(loadings_3)
+sweep(loadings_3, 2, colSums(loadings_3), "/")
+
+COR4 <- cor(loadings_3)
+
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+```
+
+PC1: Ed policy/leadership or administration
+PC2: physical health, nursing, psychological health
+PC3: Technology applications of/to education
+PC4: Language/Literacy
+PC5: courses seem less coherently related from here on out. Or they look like PC7, which has Dance and Music listed, but also social studies and gifted education, which seem too weak a connection to emphasize. 
