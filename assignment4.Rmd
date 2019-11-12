@@ -1,6 +1,8 @@
 ---
 title: "Principle Component Aanalysis"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 ## Data
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
@@ -16,18 +18,18 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+
+D1 <- read.csv("Assistments-confidence.csv")
+D1<-D1[,-1]
 
   #We won't need the id variable, so remove that.
-
-
 ```
 
 ## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+#install.packages("corrplot")
 library(corrplot)
 
 #Generate pairwise correlations
@@ -44,7 +46,7 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -54,6 +56,7 @@ D2 <- scale(D2, center = TRUE)
 
 ```{r}
 pca <- prcomp(D2, scale = TRUE)
+
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -75,13 +78,15 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+I will drop the PC4, OC5 and PC6, and keep P2,P3 and P4 because they
+
+
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
-
-D3 <- 
+D3 <- data.frame(pca$x)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,10 +94,16 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+COR2 <- cor(D4)
+
+ corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+ tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
+
 
 ```{r}
 pca$rotation
@@ -107,7 +118,8 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
-biplot(pca)
+biplot(pca,expand = 2,arrow.len = 0.05)
+?biplot
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
@@ -115,4 +127,45 @@ biplot(pca)
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+
+
+```{r}
+ K1 <- read.csv("TCprograms.csv", sep="",header = TRUE)
+ library(dplyr)
+ library(corrplot)
+ #remove the program col so that it could be correlated and scale
+ K2<-select(K1,-program)
+ # create correlation table
+ CORnew<-cor(K2)
+ corrplotnew<-corrplot(CORnew, order="AOE", method="circle", tl.pos="lt", type="upper",        
+ tl.col="black", tl.cex=0.6, tl.srt=45, 
+         addCoef.col="black", addCoefasPercent = TRUE,
+         sig.level=0.50, insig = "blank")
+ # scale the data
+ K2_1<-scale(K2,center=TRUE)
+ pca1 <- prcomp(K2_1, scale = TRUE)
+
+ #caculate the standard dev and variance
+ sd<-pca1$sdev
+ var<-pca1$sdev^2
+ #summary & plot pca/
+ summary(pca1)
+ plot(pca1, type = "lines")
+
+ #new data frame after pca
+ K3<-data.frame(pca1$x)
+ #back the name variable
+ rownames(K3)<-K1$program
+ #from the pc 1-4 find our the pattern that which programs are highly related
+ #pc1:(+pc)Social studies, Education Leadership,Sociology,Education Policy，cooperation and conflict resolution are highly related. (-pc) Dance Education,adult education,music，diabetes education,nursing,nutrition,movement science are related.
+ #pc2 (+pc) Clinical psychology,school psychology,behavior analysis,health education,psychological counseling are related.(-pc) Education leadership,higher and postsecondary education，economics and education, international and comparative education are related.
+ #pc3 （+pc) Creative technology,Learning Analytics,Social Studies,Communication, Media,and Learning Technology are related. (-pc) Diabetes education,sexuality,women,gender in psychology，health education,bilingual bicultrual education.nursing are related.
+ #pc4(+pc)Leadership,economic and education,dance education and politics are related together. (-pc) Communication,Media and Learning Technology,reading,lingustic，literacy are related.
+ #Most of the relationship make sense to me. I'm a little bit confused about why some program not show strong relation with any majors? And PC1-PC4 have many overlap.
+ K4<-pca1$rotation
+ #loadingsnew <- abs(pca1$rotation)
+ #sweep(loadingsnew, 2, colSums(loadings), "/")
+ biplot(pca1)
+ #how to zoom the plot?
+```
 
