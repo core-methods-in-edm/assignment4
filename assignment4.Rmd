@@ -16,9 +16,9 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
-  #We won't need the id variable, so remove that.
+D1 <- read.csv("Assistments-confidence.csv", header = TRUE)
+D1 <- D1[,-1]
+#We won't need the id variable, so remove that.
 
 
 ```
@@ -29,22 +29,25 @@ D1 <-
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
 library(corrplot)
-
+library(corrgram)
 #Generate pairwise correlations
 COR <- cor(D1)
-
+COR
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
+
 #Study your correlogram image and save it, you will need it later
+corrgram(COR, order=TRUE, lower.panel=panel.shade,
+  upper.panel=panel.pie, text.panel=panel.txt)
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -75,13 +78,14 @@ plot(pca, type = "lines")
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+According to the summary, pca1 to pca4 have explained 78% of the data, thus, pca5 and 6 can be removed from data set.
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- pca$x[,1:4]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,30 +93,93 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
 
+# Compared with pca with 6 component 
+
+COR2 <- cor(D4)
+COR2
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+# If we use all 6 components
+D3_2 <- pca$x[,1:6]
+D4_2 <- cbind(D3_2,as.data.frame(D1$mean_correct))
+COR2_2 <- cor(D4_2)
+corrplot(COR2_2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+# Comparing these two plots, PC1-4 are not highly correlated to the mean_correct. However, pc6 has the highest correaltion to mean_correct. Thus, after drop some components, some important imformation must be lost. 
 ```
+
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
+# For appropriate values of i, the eigenvalue is p$sdev[i]^2, with eigenvector p$rotation[,i]
+
 pca$rotation
 
 #Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
 
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
 
+loadings
+
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
+```
 
+### Numbers in column show how does the each principal component are consisted of.
+
+### For Example,the main contributior of PC1 is mean_hint, which covers 30%, others including 12% of prior_prob_count, 8% of prior_percent_correct, 21%of problems_attempted, 25% of mean_attempt and 1% of mean_confidence.
+
+### According to the explanation above, PC1 is mainly based on mean_hint, problems_attempted and mean_attempt. PC2 has high weight on prior_percent_correct and prior_prob_count. PC3 mainly relies on mean_confidence,prior_prob_count and problems_attempted.
+
+```{r}
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+D5 <- pca$x[,1:6] %*% t(pca$rotation[,1:6])
+
+D6 <- cbind(D5, as.data.frame(D1$mean_correct))
+
+COR3 <- cor(D6)
+
+corrgram(D6, order=TRUE, lower.panel=panel.shade,upper.panel=panel.pie)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+  
 ```
+
+
 # Part III  
 
-## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to another TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
+```{r}
+datanew <- read.csv("TCprograms.csv",header = TRUE, sep = "")
+datanew <- datanew[,-1]
+datanew <- datanew[-69,]
+datanew <- scale(datanew)
+pca2 <- prcomp(datanew, scale = TRUE)
+summary(pca2)
+screeplot(pca2,type="lines")
+# Choose first 7 as principle components
+pc <- pca2$x[,1:7]
+pc2 <- pca2$rotation[,1:7]
+pc3 <- pc %*% t(pc2)
+cornew <- cor(pc3)
+corrgram(pc3, order=TRUE)
+biplot(pca2,cex = 0.4)
+heatmap(cornew)
+```
+
+### According to the heatmap, the uppper right corner is a highly correlated area beacause all of these programs have a same key word "Psychology". In the upper right part, learning analytics and Mathematics share high correlation because these two programs are under the same department. Other high correlated area such as linguistic,literacy and Bilingual education, these three programs are all about language and linguistic.
