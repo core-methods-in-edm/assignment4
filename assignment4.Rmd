@@ -16,10 +16,10 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("Assistments-confidence.csv",stringsAsFactors = FALSE,header = TRUE)
 
   #We won't need the id variable, so remove that.
-
+D1<-D1[,-1]
 
 ```
 
@@ -31,20 +31,19 @@ D1 <-
 library(corrplot)
 
 #Generate pairwise correlations
-COR <- cor(D1)
+COR <- cor(D1)  # give us the correlation matrix like in SPSS
 
-corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
-tl.col="black", tl.cex=0.6, tl.srt=45, 
+corrplot(COR, order="AOE", method="circle", tl.pos="ld", type="lower",        
+tl.col="blue", tl.cex=0.8, tl.srt=20, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
 ```
-
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -53,7 +52,7 @@ D2 <- scale(D2, center = TRUE)
 ## Now run the PCA on the new data frame
 
 ```{r}
-pca <- prcomp(D2, scale = TRUE)
+pca <- prcomp(D2, scale = TRUE) #It's a list.
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
@@ -70,28 +69,45 @@ pca$sdev^2
 summary(pca)
 
 #We can look at this to get an idea of which components we should keep and which we should drop
+#PC1:27.41% PC2:18.53%  cumulative:45.94%
 
-plot(pca, type = "lines")
+plot(pca, type = "lines") #scree plot
 ```
 
 ## Decide which components you would drop and remove them from your data set.
+#PC1:27.41% PC2:18.53%  cumulative:45.94%
+#PC3~6 should be removed
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- data.frame(pca[["x"]])
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
+D4_dropped<-dplyr::select(D4,PC1,PC2,"D1$mean_correct")
+
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+# A: No, dropped some components won't affect the intergrity of information about mean_correct.
 
+COR2 <- cor(D4)
+COR2_dropped<-cor(D4_dropped)
+corrplot(COR2, order="AOE", method="circle", tl.pos="ld", type="lower",        
+tl.col="blue", tl.cex=0.8, tl.srt=20, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+corrplot(COR2_dropped, order="AOE", method="circle", tl.pos="ld", type="lower",        
+tl.col="blue", tl.cex=0.8, tl.srt=20, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
+
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
@@ -105,14 +121,64 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
+#In PC 1 mean_hint and mean_attempt account for larger eigenvector
+#In PC 2 prior_percent_correct and prior_prob_count account for larger eigenvector
+
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
 
+#See above
+
 ```
+
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
+```{r}
+df<-read.csv("TCprograms.csv",header=TRUE,stringsAsFactor=FALSE,sep="")
+row.names(df)<-df$program
+df$program<-NULL
+
+# transform the dataframe into a correlation matrix
+COR3<-cor(df)
+
+corrplot(COR3, order="AOE", method="circle", tl.pos="ld", type="lower",        
+tl.col="blue", tl.cex=0.8, tl.srt=20, addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+
+#run the PCA on the new data frame
+pca2 <- prcomp(df, scale = TRUE)
+
+summary(pca2)
+
+#plotting scree plot
+plot(pca2, type = "lines") #PC1~4 could be kept
+
+
+```
+
+```{r}
+#create a data frame of the transformed data from  pca2.
+D6 <- data.frame(pca2[["x"]])
+
+pca2$rotation
+  
+
+loadings2 <- abs(pca2$rotation) #abs() will make all eigenvectors positive
+
+D8<-data.frame(sweep(loadings2, 2, colSums(loadings2), "/"))
+
+View(D8)
+#In PC1 Change Leadership; Economics and Education, Education Policy;School Principals are clustered since they are more adminstrative and policy related.
+
+#In PC2 Kinesiology; Clinical Psychology; Physiology; Neroscience are clustered since they are more biologically relevant.
+
+#In PC3 Learning Analytics; Cognitive Science;Mathematics; Design and Development of Digital Games are clustered since they are more mathematically or analytically relevant.
+
+#In PC4 Linguistics; English Education;Teaching English; Literacy are clustered since they are more TESOL related.
+```
