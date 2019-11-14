@@ -64,7 +64,7 @@ pca$sdev
 
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
 
-pca$sdev^2
+pca$sdev^2 
 
 #A summary of our pca will give us the proportion of variance accounted for by each component
 
