@@ -12,15 +12,19 @@ The data you will be using comes from the Assistments online intelligent tutorin
 - mean_correct: The average number of correct answers a student made on their first attempt at problems in the current session
 - mean_hint: The average number of hints a student asked for in the current session
 - mean_attempt: The average number of attempts a student took to answer a problem in the current session
-- mean_confidence: The average confidence each student has in their ability to answer the problems in the current session
+- mean_confidence: The average confidence each student has in their ability to answer the problem int he current session
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(readr)
+D1 <- read_csv("Assistments-confidence.csv")
 
   #We won't need the id variable, so remove that.
 
 
+```
+```{r}
+D2<- D1[,-1]
 ```
 
 ## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
@@ -29,22 +33,24 @@ D1 <-
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
 
 library(corrplot)
-
+plot(D2)
 #Generate pairwise correlations
-COR <- cor(D1)
-
+COR <- cor(D2)
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
 #Study your correlogram image and save it, you will need it later
+
+library(corrgram)
+corrgram(D2)
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+D2 <- D2[,-4]
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
@@ -81,15 +87,19 @@ plot(pca, type = "lines")
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- D2[,1:3]
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
-
-COR2 <- 
+#Yes, the correlation we lose may affect mean_correct
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -110,9 +120,28 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
-
+new_corr <- pca$x %*% t(pca$rotation)
+corrgram(new_corr)
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+```{r}
+TCprograms <- read.csv("TCprograms.csv",sep=" ")
+pca3 <- prcomp(TCprograms[,-1], scale = TRUE)
+summary(pca3)
+```
+```{r}
+T1 <- TCprograms[,-1]
+T1 <- T1[,1:9]
+COR3 <- cor(T1)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+
+corrgram(T1)
+pca3_2 <- prcomp(T1, scale = TRUE)
+biplot(pca3_2)
+```
 
