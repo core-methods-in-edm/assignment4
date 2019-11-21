@@ -16,9 +16,12 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+library(dplyr)
+D1 <- read.csv("Assistments-confidence.csv", header=TRUE)
 
   #We won't need the id variable, so remove that.
+
+D1 <- select(D1, -id)
 
 
 ```
@@ -33,8 +36,7 @@ library(corrplot)
 #Generate pairwise correlations
 COR <- cor(D1)
 
-corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
-tl.col="black", tl.cex=0.6, tl.srt=45, 
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
 
@@ -44,12 +46,13 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
+library(dplyr)
+D2 <- select(D1,-mean_correct)
 
-#The, scale and center your data for easier interpretation
+#Then, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
 ```
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                 
 ## Now run the PCA on the new data frame
 
 ```{r}
@@ -60,7 +63,7 @@ pca <- prcomp(D2, scale = TRUE)
 
 ```{r}
 pca$sdev
-
+                                                                                                                                                 
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
 
 pca$sdev^2
@@ -81,7 +84,8 @@ plot(pca, type = "lines")
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- pca$x
+
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
@@ -89,7 +93,13 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+#Yes
+
+COR2 <- cor(D4)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=1, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
@@ -105,14 +115,49 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
 
+##Based on the biplot, mean_attempt and mean_hint seem to go together. They also have the highest loading weights in the PC1 column. I think this means they are strongly correlated and PC1 captures a fair amount of the variation in the data for those variables.
+
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
 
-biplot(pca)
+biplot(pca, cex = .4)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+
+D5 <- as.matrix(D2) %*% pca$rotation
+
+D5 <- cbind(D5, as.data.frame(D1$mean_correct))
+
+
+COR2 <- cor(D5)
+
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=1, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
 ```
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
 
+```{r}
+
+library(tidyverse)
+D6 <- read.csv("TCprograms.csv", header=TRUE, sep = "") %>%
+  .[-69,]
+D7 <- D6[,-1]
+D7 <- scale(D7, center = TRUE)
+
+pca2 <- prcomp(D7, scale = TRUE)
+
+plot(pca2, type = "lines")
+
+biplot(pca2, cex = .4)
+loadings2 <- as.data.frame(abs(pca2$rotation))
+loadings3 <- cbind(loadings2,D6$program)
+loadings3 <- rownames_to_column(loadings3,"program")
+arrange(loadings3,desc(PC1)) 
+arrange(loadings3,desc(PC2)) 
+
+#In the PC1 column, the programs with the highest eigenvector values seem to be related to leadership. In PC2, the highest loading values seem to belong to a lot of programs related to health and psychology. 
+
+```
