@@ -28,7 +28,8 @@ D1 <- D1[,-1]
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-install.packages("corrplot")
+
+
 library("corrplot")
 
 #Generate pairwise correlations
@@ -92,14 +93,20 @@ D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
 #Answers:PC1 pc2 pc3 has relatively high correlation variation, but If we drop pc4 pc5 pc6, we would lost the another high correlation with mean-correct, pc6.  
-install.packages("corrplot")
+
 library("corrplot")
 COR2 <- cor(D4)
 corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
-
+#if I drop PC4,PC5, PC6 here
+D5<-D4[,-(4:7)]
+COR3 <- cor(D5)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
@@ -119,6 +126,12 @@ sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a propo
 biplot(pca)
 
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+D6 <- as.matrix(D2) %*% pca$rotation
+COR4 <- cor(D6)
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt",type="upper",        tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+#D2$aggressiveness <- D2$prior_prob_count*0.12423113 + D2$prior_percent_correct*0.08035956 + D2$problems_attempted*0.21744737 + D2$mean_hint*0.30223780 + D2$mean_attempt*0.25863458 + D2$mean_confidence*0.01708956
 # PC1 mostly influenced by problems_attempted, mean_hint and mean_attempt, it represents the status of student in current session.
 # PC2 mostly influenced by prior_prob_count and prior_percent_correct, it represents the status of student prior to this session.
 ```
@@ -135,7 +148,7 @@ library(dplyr)
 loadings <- abs(pca$rotation) 
 loadings <-as.data.frame(loadings)
 loadings1 <- arrange(loadings,desc(PC1,PC2,PC3,PC4))
-install.packages("corrplot")
+
 library("corrplot")
 CORa <- cor(P3)
 corrplot(CORa, order="AOE", method="circle", tl.pos="lt", type="upper",        
