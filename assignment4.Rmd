@@ -16,14 +16,22 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
+D1 <- read.csv("assistments-confidence.csv")
+View(D1)
 
   #We won't need the id variable, so remove that.
 
-
+D1$id <- NULL
+View(D1)
 ```
 
 ## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
+```{r}
+
+cor(D1)
+
+```
+
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
@@ -43,11 +51,15 @@ tl.col="black", tl.cex=0.6, tl.srt=45,
 
 ## Create a new data frame with the mean_correct variables removed
 
+
+
 ```{r}
-D2 <- 
+D2 <- D1[,-4]
+head(D2)
 
 #The, scale and center your data for easier interpretation
 D2 <- scale(D2, center = TRUE)
+#View(D2)
 ```
 
 ## Now run the PCA on the new data frame
@@ -74,23 +86,37 @@ summary(pca)
 plot(pca, type = "lines")
 ```
 
+
 ## Decide which components you would drop and remove them from your data set.
+I am likely to drop the last component, confidence since it has the lowest PCA value. 
+```{r}
+View(D2)
+```
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
 
-D3 <- 
+D3 <- as.data.frame(pca$x)
+View(D3)
 
 #Attach the variable "mean_correct" from your original data frame to D3.
 
+
 D4 <- cbind(D3, as.data.frame(D1$mean_correct))
 
-#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
 
-COR2 <- 
+#Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct? 
 
+#Yes, I believe there would be information changed if I drop mean_correct
+
+
+COR2 <- cor(D4)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
@@ -115,4 +141,20 @@ biplot(pca)
 # Part III  
 
 ## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+```{r}
+library(tidyr)
+library(stringr)
+library(dplyr)
+```
+
+D5 <- read.csv("TCprograms.csv", sep="")
+View(D5)
+D5 <- D5[,-1]
+pca2 <- prcomp(D5, scale = TRUE)
+summar(D5)
+COR3 <-cor(D5[, 1:15])
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
 
