@@ -1,8 +1,7 @@
 ---
-title: "Principle Component Aanalysis"
-output: html_document
----
-## Data
+title: "Principle Component Analysis"
+
+
 The data you will be using comes from the Assistments online intelligent tutoring system (https://www.assistments.org/). It describes students working through online math problems. Each student has the following data associated with them:
 
 - id
@@ -16,103 +15,99 @@ The data you will be using comes from the Assistments online intelligent tutorin
 
 ## Start by uploading the data
 ```{r}
-D1 <- 
-
+B1 <- read.csv('Assistments-confidence.csv')
   #We won't need the id variable, so remove that.
-
-
+B1 = B1[,-1]
 ```
 
 ## Create a correlation matrix of the relationships between the variables, including correlation coefficients for each pair of variables/features.
 
 ```{r}
 #You can install the corrplot package to plot some pretty correlation matrices (sometimes called correlograms)
-
+install.packages("corrplot")
 library(corrplot)
-
+library(tidyr)
+library(dplyr)
 #Generate pairwise correlations
 COR <- cor(D1)
-
 corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper",        
 tl.col="black", tl.cex=0.6, tl.srt=45, 
         addCoef.col="black", addCoefasPercent = TRUE,
         sig.level=0.50, insig = "blank")
-
 #Study your correlogram image and save it, you will need it later
 ```
 
 ## Create a new data frame with the mean_correct variables removed
 
 ```{r}
-D2 <- 
-
+B2 <- B1[, -4]
 #The, scale and center your data for easier interpretation
-D2 <- scale(D2, center = TRUE)
+B2 <- scale(B2, center = TRUE)
 ```
 
 ## Now run the PCA on the new data frame
 
 ```{r}
-pca <- prcomp(D2, scale = TRUE)
+pca <- prcomp(B2, scale = TRUE)
 ```
 
 ## Although princomp does not generate the eigenvalues directly for us, we can print a list of the standard deviation of the variance accounted for by each component.
 
 ```{r}
 pca$sdev
-
 #To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
-
 pca$sdev^2
-
 #A summary of our pca will give us the proportion of variance accounted for by each component
-
 summary(pca)
-
 #We can look at this to get an idea of which components we should keep and which we should drop
-
 plot(pca, type = "lines")
 ```
 
-## Decide which components you would drop and remove them from your data set.
+## Think about which components you would drop and make a decision
 
 ## Part II
 
 ```{r}
 #Now, create a data frame of the transformed data from your pca.
-
-D3 <- 
-
+B3 <- as.data.frame(pca$x)
 #Attach the variable "mean_correct" from your original data frame to D3.
-
-D4 <- cbind(D3, as.data.frame(D1$mean_correct))
-
+B4 <- cbind(D3, as.data.frame(B1$mean_correct))
 #Now re-run your scatterplots and correlations between the transformed data and mean_correct. If you had dropped some components would you have lost important infomation about mean_correct?
-
-COR2 <- 
-
+COR2 <- cor(B4)
 ```
 ## Now print out the eigenvectors (often called loadings) for the components you generated:
 
 ```{r}
 pca$rotation
-
 #Examine the eigenvectors, notice that they are a little difficult to interpret. It is much easier to make sense of them if we make them proportional within each component
-
 loadings <- abs(pca$rotation) #abs() will make all eigenvectors positive
-
 sweep(loadings, 2, colSums(loadings), "/") #sweep() computes each row as a proportion of the column. (There must be a way to do this with dplyr()?)
-
 #Now examine your components and try to come up with substantive descriptions of what some might represent?
-
 #You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
-
 biplot(pca)
-
 #Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
-
 ```
 # Part III  
+## Also in this repository is a data set and codebook from Rod Martin, Patricia Puhlik-Doris, Gwen Larsen, Jeanette Gray, Kelly Weir at the University of Western Ontario about people's sense of humor. 
 
-## Also in this repository is a data set collected from class that shows how many students thought that a TC program was related to andother TC program. Use PCA to look for components of related programs. Explain why you think there are relationships between these programs.
+```{r}
+G1 = read.csv('humor_data.csv')
+COR3 = cor(F1)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper",        
+tl.col="black", tl.cex=0.6, tl.srt=45, 
+        addCoef.col="black", addCoefasPercent = TRUE,
+        sig.level=0.50, insig = "blank")
+G2 = scale(F1, center = TRUE)
+```
 
+## Can you perform a PCA on this data?
+```{r}
+#Now run the PCA on the new data frame
+pca2 = prcomp(G2, scale = TRUE)
+pca2$sdev
+#To convert this into variance accounted for we can square it, these numbers are proportional to the eigenvalue
+pca2$sdev^2
+#A summary of our pca will give us the proportion of variance accounted for by each component
+summary(pca2)
+#We can look at this to get an idea of which components we should keep and which we should drop
+plot(pca2, type = "lines")
