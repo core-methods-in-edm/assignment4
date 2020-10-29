@@ -7,15 +7,16 @@ In this assignment we will be applying the K-means clustering algorithm we looke
 https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
-```{r}
-library()
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
-
-K1 <- read.csv(...)
-
+set.seed(3356)
+K1 <- read.csv("Class_Motivation.csv")
+head(K1)
+summary(K1)
 ```
 
 This file contains the self-reported motivation scores for a class over five weeks. We are going to look for patterns in motivation over this time and sort people into clusters based on those patterns.
@@ -26,12 +27,15 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- K1 %>% select(-id)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
+1. listwise deletion of missing data will lead to greate lost of information. We may not have adequate data for reliable clustering; 
+
+2. we need to fist assume that the missing is (completely) at random. Otherwise, missing may lead to the biased estimation; 
 
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
@@ -47,7 +51,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3,center = T,scale = T)
 
 ```
 
@@ -66,21 +70,21 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+fit <- kmeans(K3,2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
-
+fit$cluster
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3,fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
-
-
+names(K4) <- c("motivation1","motivation2","motivation3","motivation4","motivation5","cluster")
+head(K4)
 ```
 
 Now we need to visualize the clusters we have created. To do so we want to play with the structure of our data. What would be most useful would be if we could visualize average motivation by cluster, by week. To do this we will need to convert our data from wide to long format. Remember your old friends tidyr and dplyr!
@@ -89,14 +93,15 @@ First lets use tidyr to convert from wide to long format.
 ```{r}
 
 K5 <- gather(K4, "week", "motivation", 1:5)
+head(K5)
 ```
 
 Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
-
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+K6
 ```
 
 Now it's time to do some visualization: 
@@ -113,9 +118,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(as.factor(K6$week))
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -128,34 +133,87 @@ Now we can plot our line plot using the ggplot command, "ggplot()".
 
 ```{r}
 
-ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+ggplot(K6, aes(week, avg, colour = cluster)) + 
+  geom_line() + 
+  xlab("Week") + 
+  ylab("Average Motivation")
 
 ```
 
 What patterns do you see in the plot?
 
+1. Cluster 1 always have a lower average motivation than cluster 2 for all weeks;
+
+2. The average motivations in cluster 1 decrease, increase, decrease, and increase over time, where as the average motivation in cluster 2 increase, decrease, increase, and decrease. 
+
+3. The average motivation in cluster 1 change more obviously than the changes of average motivations in cluster 2.
 
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
 ```{r}
 K7 <- count(K4, cluster)
+(K7 <- K4 %>% group_by(cluster) %>% summarise(n=n()))
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+```{r}
+fit2 <- kmeans(K3,3)
+K4_2 <- data.frame(K3,fit2$cluster)
+names(K4_2) <- c("motivation1","motivation2","motivation3","motivation4","motivation5","cluster")
+K5_2 <- gather(K4_2, "week", "motivation", 1:5)
+K6_2 <- K5_2 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+K6_2$week <- as.numeric(as.factor(K6_2$week))
+K6_2$cluster <- as.factor(K6_2$cluster)
+ggplot(K6_2, aes(week, avg, colour = cluster)) + 
+  geom_line() + 
+  xlab("Week") + 
+  ylab("Average Motivation")
+(K8_2 <- K4_2 %>% group_by(cluster) %>% summarise(n=n()))
+```
+Personally, I think kmeans with 3 cluster is more informative. 
+
+1. For each cluster, there are relatively same number of students in each cluster. In other words, there is no obvious cluster for outliers and the size of cluster is balanced.
+
+2. Based on the visualization, the average motivation is clearly separated into three three distinct lines. 
 
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
+```{r}
+data <-read_csv("HUDK405020-cluster.csv")
+head(data)
+
+cluster_1 <- kmeans(data[,c("lat","long")],2)
+cluster_2 <- kmeans(data[,4:9],2)
+result <- data.frame(data$id,cluster_1$cluster,cluster_2$cluster)
+names(result) <- c("id","cluster1","cluster2")
+head(result)
+```
+
 
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
+result$cluster1 <- as.factor(result$cluster1)
+result$cluster2 <- as.factor(result$cluster2)
+(plot_data <- result %>% group_by(cluster1,cluster2) %>% summarise(n=n()))
 
+# Heatmap 
+ggplot(plot_data, aes(cluster1, cluster2, fill= n)) + 
+  geom_tile()
 ```
 
+When a student belongs to the first cluster in the kmean based on location (Cluster1), he/she is more likely to belong to the second cluster in the kmean based on answers to the questions (Cluster2). This tendency is very significant.
+
+When a student belongs to the second cluster in the kmean based on location (Cluster1), he/she is more likely to belong to the second cluster in the kmean based on answers to the questions (Cluster2) as well. This tendency is not significant.
+
+When a student belongs to the first cluster in the kmean based on answers to the questions (Cluster2), he/she is more likely to belong to the second cluster in the kmean based on location (Cluster1). This tendency is not significant.
+
+When a student belongs to the second cluster in the kmean based on answers to the questions (Cluster2), he/she is more likely to belong to the first cluster in the kmean based on location (Cluster1). This tendency is not significant.
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
 
