@@ -1,0 +1,226 @@
+---
+title: "Assignment 4: K Means Clustering"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+## Part I
+
+In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
+
+https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
+
+
+```{r}
+library(tidyverse)
+```
+
+Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
+
+```{r}
+
+K1 <- read.csv("Class_Motivation.csv")
+```
+
+This file contains the self-reported motivation scores for a class over five weeks. We are going to look for patterns in motivation over this time and sort people into clusters based on those patterns.
+
+But before we do that, we will need to manipulate the data frame into a structure that can be analyzed by our clustering algorithm.
+
+The algorithm will treat each row as a value belonging to a person, so we need to remove the id variable.
+
+```{r}
+
+K2 <- K1 %>% select(-id)
+
+```
+
+It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
+
+There might be a pattern or meaning behind students with missing values. NAs could be representing zero values or negative scores on a metric. Thus, systematically removing or recoding those values without knowing their meaning could skew the distribution of some of our predictor variables and negatively influence the reliability of our clusters.
+
+We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
+
+
+```{r}
+
+K3 <- na.omit(K2) #This command create a data frame with only those people with no missing values. It "omits" all rows with missing values, also known as a "listwise deletion". EG - It runs down the list deleting rows as it goes.
+
+```
+
+Another pre-processing step used in K-means is to standardize the values so that they have the same range. We do this because we want to treat each week as equally important - if we do not standardise then the week with the largest range will have the greatest impact on which clusters are formed. We standardise the values by using the "scale()" command.
+
+```{r}
+
+K3b <- K3 %>% scale
+```
+
+
+Now we will run the K-means clustering algorithm we talked about in class. 
+1) The algorithm starts by randomly choosing some starting values 
+2) Associates all observations near to those values with them
+3) Calculates the mean of those clusters of values
+4) Selects the observation closest to the mean of the cluster
+5) Re-associates all observations closest to this observation
+6) Continues this process until the clusters are no longer changing
+
+Notice that in this case we have 5 variables and in class we only had 2. It is impossible to vizualise this process with 5 variables.
+
+Also, we need to choose the number of clusters we think are in the data. We will start with 2.
+
+```{r, cache = T}
+
+fit <- kmeans(K3b, centers = 2)
+
+#We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
+
+#We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
+
+#We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
+
+K4 <- data.frame(K3,fit$cluster)
+#Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
+names(K4) <- c("1","2","3","4","5","cluster") 
+
+```
+
+Now we need to visualize the clusters we have created. To do so we want to play with the structure of our data. What would be most useful would be if we could visualize average motivation by cluster, by week. To do this we will need to convert our data from wide to long format. Remember your old friends tidyr and dplyr!
+
+First lets use tidyr to convert from wide to long format.
+```{r}
+
+K5 <- gather(K4, "week", "motivation", 1:5)
+```
+
+Now lets use dplyr to average our motivation values by week and by cluster.
+
+```{r}
+
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+
+```
+
+Now it's time to do some visualization: 
+
+https://www.cs.uic.edu/~wilkinson/TheGrammarOfGraphics/GOG.html
+
+And you can see the range of available graphics in ggplot here:
+
+http://ggplot2.tidyverse.org/reference/index.html
+
+We are going to create a line plot similar to the one created in this paper about school dropout [Bowers, 2010](http://pareonline.net/pdf/v15n7.pdf). It will have motivation on the Y-axis and weeks on the X-axis. To do this we will want our weeks variables to be treated as a number, but because it was created from a variable name it is currently being treated as a character variable. You can see this if you click on the arrow on the left of K6 in the Data pane. Week is designated by "chr". To convert it to numeric, we use the as.numeric command. 
+
+Likewise, since "cluster" is not numeric but rather a categorical label we want to convert it from an "integer" format to a "factor" format so that ggplot does not treat it as a number. We can do this with the as.factor() command.
+
+```{r}
+
+K6$week <- K6$week %>% as.numeric
+
+K6$cluster <- K6$cluster %>% as.factor
+
+```
+
+Now we can plot our line plot using the ggplot command, "ggplot()".
+
+- The first argument in a ggplot is the dataframe we are using: K6
+- Next is what is called an aesthetic (aes), the aesthetic tells ggplot which variables to use and how to use them. Here we are using the variables "week" and "avg" on the x and y axes and we are going color these variables using the "cluster" variable
+- Then we are going to tell ggplot which type of plot we want to use by specifiying a "geom()", in this case a line plot: geom_line()
+- Finally we are going to clean up our axes labels: xlab("Week") & ylab("Average Motivation")
+
+```{r}
+
+ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+
+```
+
+What patterns do you see in the plot?
+
+#### Cluster 2 has consistently higher motivation than Cluster 1 for all 5 weeks. The clusters also tend to follow opposite trends in week-by-week motivation trends (e.g. cluster 1 increases from weeks 1 to 2 while cluster 2 decreases). Only in the last week do both clusters' motivations increase, and the last week also appears to be the largest change in motivation overall. A hypothesis might explain this behavior: the  students had a boost in motivation knowing they were almost done with a class.
+
+It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
+
+```{r}
+K7 <- count(K4, cluster)
+```
+
+
+
+```{r, cache = T}
+
+fit <- kmeans(K3b, centers = 3)
+
+
+K4 <- data.frame(K3,fit$cluster)
+
+names(K4) <- c("1","2","3","4","5","cluster") 
+
+K5 <- gather(K4, "week", "motivation", 1:5)
+
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+
+
+K6$week <- K6$week %>% as.numeric
+
+K6$cluster <- K6$cluster %>% as.factor
+
+ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+```
+
+
+```{r}
+K7 <- count(K4, cluster)
+K7
+
+```
+
+Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+
+#### Clustering the students into three groups seems to be more effective because a third group of students emerges that has relatively high and extremely consistent motivation. When clustering only two groups, cluster 1 was likely merged with cluster 3 to form cluster 1. This is evident by the number of students in each cluster: 9 and 7, in the clusters 1 and 2 of the second model, make 16 in cluster 1 of the first model.
+
+## Part II
+
+Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
+```{r, cache = T}
+latlong1 <- read.csv("HUDK405020-cluster.csv")
+
+latlong2 <- latlong1 %>% select(lat,long) %>% scale
+
+alg_latlong <- kmeans(latlong2, centers = 2)
+
+alg_latlong$cluster <- ifelse(alg_latlong$cluster == 2, "Americas", "Asia")
+
+data.frame(latlong1,alg_latlong$cluster) %>% ggplot + geom_point(mapping = aes(x = lat, y = long, color = alg_latlong.cluster))
+```
+
+```{r, cache = T}
+answers1 <- read.csv("HUDK405020-cluster.csv")
+
+answers2 <- answers1 %>% select(-id,-lat,-long) %>% scale
+
+alg_answers <- kmeans(answers2, centers = 3)
+data.frame(answers1,alg_answers$cluster) %>% ggplot(mapping = aes(x = math.accuracy, y = enjoy.discuss, color = as.factor(alg_answers.cluster))) + geom_point() + geom_jitter()
+
+```
+
+#### Cluster 2 represents students that enjoy participating and feel confident in their quantitative ability. Cluster 1 represents students who feel ok or poorly about both, and cluster 3 contains students who do not feel confident discussing but do feel confident in their quantitative ability
+
+## Part III
+
+Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
+
+```{r}
+#jitter used to see overlapping points
+data.frame(latlong1,alg_latlong$cluster,alg_answers$cluster) %>% ggplot(mapping = aes(x = math.accuracy, y = enjoy.discuss, color = as.factor(alg_answers.cluster), shape = as.factor(alg_latlong.cluster))) + geom_point(size = 3) + geom_jitter(size = 3)
+
+data.frame(latlong1,alg_latlong$cluster,alg_answers$cluster) %>% group_by(alg_latlong.cluster,alg_answers.cluster) %>% count()
+
+```
+
+#### It seems like there is a pattern between geography and answer cluster. There are very few circles, students in the Americas cluster, that are on the extremes of math accuracy on the extreme of enjoying discussion. There are many more triangles on the far right of the plot than circles, indicating more students in the Asian area feel confident in their mathematical ability, although there are also more students on the other extreme, lacking confidence. The biggest categorical disparity lies in cluster 3 where there is a much higher percentage of Asian students than American students, potentially because of a language barrier.
+
