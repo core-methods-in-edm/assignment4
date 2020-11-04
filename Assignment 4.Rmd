@@ -8,13 +8,14 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(dplyr)
+library(tidyr)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv", header = TRUE)
 
 ```
 
@@ -26,12 +27,13 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- select(K1, 2:6)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
+If we remove some values, we will lose some of students' data. Probably, our cluster will not as accurate as we expect. 
 
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
@@ -47,7 +49,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3b <- scale(K3)
 
 ```
 
@@ -66,20 +68,19 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
 
-
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
-
-K4
+fit <- kmeans(K3b, 2)
+K4 <- data.frame(K3b, fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
-
+colnames(K4)<- c(1,2,3,4,5,"fit.cluster")
 
 ```
 
@@ -95,7 +96,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, fit.cluster)%>% summarise(K5, avg = mean(motivation))
 
 ```
 
@@ -109,13 +110,16 @@ http://ggplot2.tidyverse.org/reference/index.html
 
 We are going to create a line plot similar to the one created in this paper about school dropout [Bowers, 2010](http://pareonline.net/pdf/v15n7.pdf). It will have motivation on the Y-axis and weeks on the X-axis. To do this we will want our weeks variables to be treated as a number, but because it was created from a variable name it is currently being treated as a character variable. You can see this if you click on the arrow on the left of K6 in the Data pane. Week is designated by "chr". To convert it to numeric, we use the as.numeric command. 
 
+
+
+
 Likewise, since "cluster" is not numeric but rather a categorical label we want to convert it from an "integer" format to a "factor" format so that ggplot does not treat it as a number. We can do this with the as.factor() command.
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$fit.cluster <- as.factor(K6$fit.cluster)
 
 ```
 
@@ -127,8 +131,8 @@ Now we can plot our line plot using the ggplot command, "ggplot()".
 - Finally we are going to clean up our axes labels: xlab("Week") & ylab("Average Motivation")
 
 ```{r}
-
-ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+library(ggplot2)
+ggplot(K6, aes(week, avg, colour = fit.cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
 
 ```
 
@@ -139,7 +143,7 @@ What patterns do you see in the plot?
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
 ```{r}
-K7 <- count(K4, cluster)
+K7 <- count(K4, fit.cluster)
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
@@ -148,13 +152,48 @@ Look at the number of people in each cluster, now repeat this process for 3 rath
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 
+```{r}
+D1 <- read.csv("HUDK405020-cluster.csv", header = TRUE)
+
+D2 <- select(D1, 2:3)
+D2 <- scale(D2)
+
+fit1 <- kmeans(D2,2)
+
+D3 <- data.frame(D2, fit1$cluster)
+
+plot(D3$lat, D3$long, col = D3$fit1.cluster)
+
+D4 <- select(D1, 4:9)
+
+D4 <- scale(D4)
+
+fit2 <- kmeans(D4, 2)
+
+D4 <- data.frame(D4, fit2$cluster)
+
+plot(D4, col = D4$fit2.cluster)
+
+```
+
+
+
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
+DF1 <- merge(D3,D4)
 
+DF2 <- select(DF1, 3,9)
+
+DF3 <- select(DF1,1:2,4:8)
+
+pairs(DF2)
+
+pairs(DF3)
 ```
+
 
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
