@@ -224,6 +224,7 @@ DFF2 <- DFF %>% group_by(location.cluster, answers.cluster) %>% summarise(avg = 
 
 ##Part III
 
+
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
