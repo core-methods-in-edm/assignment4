@@ -169,9 +169,8 @@ Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) 
 ```{r}
 d1 = read.csv("HUDK405020-cluster.csv")
 d2 <- d1[,-1]
-d3 <- data.frame(d2, location = d2$lat/d2$long)[,c(-1,-2)]
-d3 <- data.frame(scale(d3))
-fit1 <- kmeans(d3$location, 2)
+d3 <- data.frame(scale(d2))
+fit1 <- kmeans(d3[,c(1,2)], 4)
 fit2 <- kmeans(d3[,-7],4)
 d4 = data.frame(d3, loc.cluster = fit1$cluster, ans.cluster = fit2$cluster)
 d5 <- gather(d4, "question", "answer", 1:6)
@@ -181,11 +180,11 @@ d6 <- count(d5, loc.cluster)
 # The clusters for locations group people with close locations, and the clusters
 # for answers group people with similar styles of answers.
 
-# 2 clusters are chosen for locations because I assume that most students are from
-# either Asia or America. 4 clusters are chosen for answers because I assume that there
-# are three types of styles: well organized and good at numbers but not good at conversations;
-# not well organized and not good at numbers but good at conversations; good at both; and not good
-# at both.
+# 4 clusters are chosen for locations because I assume that most students are from East Asia, 
+# West/East Coast, and South America. 4 clusters are chosen for answers because I assume that 
+# there are three types of styles: well organized and good at numbers but not good at 
+# conversations; not well organized and not good at numbers but good at conversations; good at 
+# both; and not good at both.
 ```
 
 ##Part III
@@ -194,9 +193,7 @@ Create a visualization that shows the overlap between the two clusters each stud
 
 ```{r}
 ggplot(d5, aes(loc.cluster, fill = ans.cluster)) + geom_bar(stat="count",width=0.5,position='stack') + xlab("location") + ylab("answer")
-# Combined with the line plot, 40% of students from both locations are good at both.
-# 50% of students from both locations are good at one aspect. And 10% of students are
-# relatively not good at both. There is no geometric pattern involved. 
+# There is no clear geometric pattern involved but there seems to be a diversion between one location and the other two similar-style locations.
 ```
 ```{r}
 d7 <- d5 %>% group_by(loc.cluster, ans.cluster) %>% summarise(avg = mean(answer))
