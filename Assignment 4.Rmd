@@ -1,7 +1,5 @@
 ---
 title: 'Assignment 4: K Means Clustering'
-### Name:Jingshu Zhang
-### Date: 11/05/2020
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -206,7 +204,8 @@ Create a visualization that shows the overlap between the two clusters each stud
 
 ```{r}
 Q3<-data.frame(H1,H4$cluster_loc,Q2$cluster)
-ggplot(Q3, aes(H1$id, H4$cluster_loc,Q2$cluster, colour = Q2$cluster))+ geom_line() 
+ggplot(Q3, aes(H1$id, H4$cluster_loc,Q2$cluster, colour = Q2$cluster))+ geom_point(size=1.5) 
+
 ```
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
 
