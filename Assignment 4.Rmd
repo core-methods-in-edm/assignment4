@@ -1,5 +1,5 @@
 ---
-title: "Assignment 4: K Means Clustering"
+title: 'Assignment 4: K Means Clustering'
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -8,13 +8,14 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(dplyr)
+library(tidyr)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv")
 
 ```
 
@@ -26,12 +27,13 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- K1[,-1] 
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
+If we removed the missing values, there will be less data. But in case if we decide to keep them, we need to make an assumption which might not reflect the true nature of the data. 
 
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
@@ -47,7 +49,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3)
 
 ```
 
@@ -66,21 +68,21 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+fit <- kmeans(K3, 2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
-
+fit$cluster
 
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3, fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 
-
+names(K4) <- c("week1","week2","week3", "week4","week5", "cluster")
 ```
 
 Now we need to visualize the clusters we have created. To do so we want to play with the structure of our data. What would be most useful would be if we could visualize average motivation by cluster, by week. To do this we will need to convert our data from wide to long format. Remember your old friends tidyr and dplyr!
@@ -89,13 +91,16 @@ First lets use tidyr to convert from wide to long format.
 ```{r}
 
 K5 <- gather(K4, "week", "motivation", 1:5)
+K5$cluster <- as.factor(K5$cluster)
+K5$week <- as.factor(K5$week)
+K5$motivation <- as.numeric(K5$motivation)
 ```
 
 Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <-  K5 %>% group_by(cluster, week) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,10 +118,10 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
-
+K6$cluster <- as.factor(K6$cluster)
+K6$avg <- as.numeric(K6$avg)
 ```
 
 Now we can plot our line plot using the ggplot command, "ggplot()".
@@ -127,14 +132,15 @@ Now we can plot our line plot using the ggplot command, "ggplot()".
 - Finally we are going to clean up our axes labels: xlab("Week") & ylab("Average Motivation")
 
 ```{r}
-
+library(ggplot2)
 ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
 
 ```
 
 What patterns do you see in the plot?
 
-
+Cluster 1 motivation is in upward trend during the five weeks
+while the cluster motivation is in a downward trend.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
@@ -143,15 +149,65 @@ K7 <- count(K4, cluster)
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+The 2 cluster in more informative
+```{r}
+K11 <- read.csv("Class_Motivation.csv")
+K22 <- K11[,-1] 
+K33 <- na.omit(K22)
+K33 <- scale(K33)
+fit <- kmeans(K33, 3)
+K44 <- data.frame(K33, fit$cluster)
+names(K44) <- c("week1","week2","week3", "week4","week5", "cluster")
+K55 <- gather(K44, "week", "motivation", 1:5)
+K55$cluster <- as.factor(K55$cluster)
+K55$week <- as.factor(K55$week)
+K55$motivation <- as.numeric(K55$motivation)
+K66 <-  K55 %>% group_by(cluster, week) %>% summarise(avg = mean(motivation))
+K66$week <- as.numeric(K66$week)
+K66$cluster <- as.factor(K66$cluster)
+K66$avg <- as.numeric(K66$avg)
+ggplot(K66, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+K77 <- count(K44, cluster)
+```
 
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+```{r}
+# first
+df1 <- read.csv("HUDK405020-cluster.csv")
+df2 <- df1[,-c(1,4:9)]
+df3 <- scale(df2)
+fit <- kmeans(df3,4)
+df4 <- data.frame(df3, fit$cluster)
+names(df4) <- c("lat","long","cluster")
+df4$cluster <- as.factor(df4$cluster)
+```
+
+```{r}
+df11 <- read.csv("HUDK405020-cluster.csv")
+df22 <- df11[,-c(1:3)]
+df33 <- scale(df22)
+fit <- kmeans(df33,2)
+df44<- data.frame(df33, fit$cluster)
+df44$fit.cluster <- as.factor(df44$fit.cluster)
+```
+
+```{r}
+
+```
 
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
+```{r}
+ggplot() +
+  geom_point(data =df4, 
+             mapping = aes(x = lat, 
+                           y = long, 
+                            colour = cluster))
+```
 ```{r}
 
 ```
