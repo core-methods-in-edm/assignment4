@@ -1,5 +1,5 @@
 ---
-title: "Assignment 4: K Means Clustering"
+title: 'Assignment 4: K Means Clustering'
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -9,12 +9,15 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 ```{r}
 library()
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv('Class_Motivation.csv', header = TRUE)
 
 ```
 
@@ -26,7 +29,8 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <-
+K2 <- select(K1, 2:6)
 
 ```
 
@@ -47,7 +51,9 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <-
+K3 <- scale(K3)
+K3 <- data.frame(K3)
 
 ```
 
@@ -66,7 +72,8 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+fit <-
+fit <- kmeans(K3, 2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
@@ -76,10 +83,11 @@ fit <-
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3, fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 
+names(K4)<-c("1", "2", "3" ,"4" ,"5", "cluster")
 
 ```
 
@@ -89,13 +97,15 @@ First lets use tidyr to convert from wide to long format.
 ```{r}
 
 K5 <- gather(K4, "week", "motivation", 1:5)
+
 ```
 
 Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+
 
 ```
 
@@ -116,6 +126,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 K6$week <- 
 
 K6$cluster <- 
+
+K6$week <- as.factor(K6$week)
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -147,6 +160,26 @@ Look at the number of people in each cluster, now repeat this process for 3 rath
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+```{r}
+
+A1 <- read.csv("HUDK405020-cluster.csv", header = TRUE)
+A2 <- select(A1, 2:3) %>% scale()
+A3 <- scale(A2)
+A3 <- as.data.frame(A3)
+
+fit2 <- kmeans(A2, 2)
+fit3 <- kmeans(A3, 2)
+
+A4 <- data.frame(A1, fit2$cluster, fit3$cluster)
+
+names(A4)[10] = "cluster1"
+names(A4)[11] = "cluster2"
+
+ggplot(A4, aes(lat,long, col=cluster1))+ geom_point()
+ggplot(A4, aes(enjoy.group,enjoy.discuss, col=cluster2))+geom_point()
+
+```
+
 
 ##Part III
 
@@ -154,8 +187,7 @@ Create a visualization that shows the overlap between the two clusters each stud
 
 ```{r}
 
+
 ```
 
-
-## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
 
