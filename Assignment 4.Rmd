@@ -1,5 +1,8 @@
 ---
 title: "Assignment 4: K Means Clustering"
+author: "Fei Wang"
+date: "11/04/2020"
+output: html_document
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -14,7 +17,7 @@ library()
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv(file = 'Class_Motivation.csv')
 
 ```
 
@@ -26,12 +29,17 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- subset(K1, select = -id)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
+```{r}
+#If we treat the missing values as they have meaning, it would not be representing the true result of what data entails. There could be many different reasons for why some data have missing values, therefore it would be too imposing and unsuitable to give them any meaning as a whole. #
+
+#However, it is also not ideal to remove people who have missing values when clustering because it would throw away data that are meaningful too, as those people also made other input of values that are useful. Therefore, the result might not represent the whole student body and could be biased. #
+```
 
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
@@ -47,7 +55,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3)
 
 ```
 
@@ -66,36 +74,40 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
+fit <- kmeans(K3, 2)
+
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
+fit$cluster
 
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3, fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 
-
+names(K4) <- c("week1", "week2", "week3", "week4", "week5", "cluster")
 ```
 
 Now we need to visualize the clusters we have created. To do so we want to play with the structure of our data. What would be most useful would be if we could visualize average motivation by cluster, by week. To do this we will need to convert our data from wide to long format. Remember your old friends tidyr and dplyr!
 
 First lets use tidyr to convert from wide to long format.
 ```{r}
-
+library(tidyr)
 K5 <- gather(K4, "week", "motivation", 1:5)
+K5
 ```
 
 Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+library(dplyr)
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(K5, avg = mean(motivation))
 
 ```
 
@@ -113,9 +125,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -123,12 +135,11 @@ Now we can plot our line plot using the ggplot command, "ggplot()".
 
 - The first argument in a ggplot is the dataframe we are using: K6
 - Next is what is called an aesthetic (aes), the aesthetic tells ggplot which variables to use and how to use them. Here we are using the variables "week" and "avg" on the x and y axes and we are going color these variables using the "cluster" variable
-- Then we are going to tell ggplot which type of plot we want to use by specifiying a "geom()", in this case a line plot: geom_line()
+- Then we are going to tell ggplot which type of plot we want to use by specifying a "geom()", in this case a line plot: geom_line()
 - Finally we are going to clean up our axes labels: xlab("Week") & ylab("Average Motivation")
 
 ```{r}
-
-ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+#ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
 
 ```
 
@@ -148,12 +159,19 @@ Look at the number of people in each cluster, now repeat this process for 3 rath
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 
+```{r}
+D1 <- read.csv(file = 'HUDK405020-cluster.csv')
+D2 <- tibble(D1$lat, D1$long)
+fit2 <- kmeans(D2, 2)
+```
+
+
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
-
+#ggplot(D2, aes(lat, long, colour = cluster)) + geom_line() + xlab("lat") + ylab("long")
 ```
 
 
