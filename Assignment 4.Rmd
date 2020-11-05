@@ -172,7 +172,7 @@ d2 <- d1[,-1]
 d3 <- data.frame(d2, location = d2$lat/d2$long)[,c(-1,-2)]
 d3 <- data.frame(scale(d3))
 fit1 <- kmeans(d3$location, 2)
-fit2 <- kmeans(d3[,-7],3)
+fit2 <- kmeans(d3[,-7],4)
 d4 = data.frame(d3, loc.cluster = fit1$cluster, ans.cluster = fit2$cluster)
 d5 <- gather(d4, "question", "answer", 1:6)
 d5$loc.cluster <- as.factor(d5$loc.cluster)
@@ -182,8 +182,8 @@ d6 <- count(d5, loc.cluster)
 # for answers group people with similar styles of answers.
 
 # 2 clusters are chosen for locations because I assume that most students are from
-# either Asia or America. 3 clusters are chosen for answers because I assume that there
-# are three types of styles: well organized and good at numbers but not good at conversations, or
+# either Asia or America. 4 clusters are chosen for answers because I assume that there
+# are three types of styles: well organized and good at numbers but not good at conversations;
 # not well organized and not good at numbers but good at conversations; good at both; and not good
 # at both.
 ```
@@ -195,7 +195,7 @@ Create a visualization that shows the overlap between the two clusters each stud
 ```{r}
 ggplot(d5, aes(loc.cluster, fill = ans.cluster)) + geom_bar(stat="count",width=0.5,position='stack') + xlab("location") + ylab("answer")
 # Combined with the line plot, 40% of students from both locations are good at both.
-# 20% of students from both locations are good at one aspect. And 40% of students are
+# 50% of students from both locations are good at one aspect. And 10% of students are
 # relatively not good at both. There is no geometric pattern involved. 
 ```
 ```{r}
@@ -203,9 +203,11 @@ d7 <- d5 %>% group_by(loc.cluster, ans.cluster) %>% summarise(avg = mean(answer)
 d7$loc.cluster <- as.numeric(d7$loc.cluster)
 ggplot(d7, aes(loc.cluster, avg, colour = ans.cluster)) + geom_line() + xlab("Location") + ylab("Average Answer Score")
 # The average answer score for each answer cluster in each location cluster does not
-# make a geographical pattern. But this plot gives us the information of which answer cluster
-# is for which case I assumed. The cluster with highest average answer score is the students who
-# are good at both; the one around 0 is good at one aspect; the lowest one is not good at both.
+# make a clear geographical pattern, but it tells us that under the cluster where students are not
+# good at both, one locatin has higher answer scores than the other. This plot gives us the 
+# information of which answer cluster is for which case I assumed. The cluster with highest
+# average answer score is the students who are good at both; the ones around are is good at one 
+# aspect; the lowest one is not good at both.
 ```
 
 
