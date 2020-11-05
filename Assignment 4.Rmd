@@ -136,7 +136,7 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
-There are clearly two clusters which refer to low or high motivation.
+There are clearly two clusters which refer to low or high motivation. For odd weeks, two clusters converge; for even weeks, they diverge. Overall, two clusters of people have low motivation, or motivation more biased to negativity.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
@@ -160,7 +160,7 @@ K6$cluster <- as.factor(K6$cluster)
 K7 <- count(K4, cluster)
 ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
 # K-means with 2 clusters is better because each cluster is separated clearly, but the one with
-# 3 clusters has clusters intertwined a bit.
+# 3 clusters has clusters overlaped a bit.
 ```
 
 ##Part II
@@ -171,13 +171,21 @@ d1 = read.csv("HUDK405020-cluster.csv")
 d2 <- d1[,-1]
 d3 <- data.frame(d2, location = d2$lat/d2$long)[,c(-1,-2)]
 d3 <- data.frame(scale(d3))
-fit1 <- kmeans(d3$location, 3)
-fit2 <- kmeans(d3[,-7],2)
+fit1 <- kmeans(d3$location, 2)
+fit2 <- kmeans(d3[,-7],3)
 d4 = data.frame(d3, loc.cluster = fit1$cluster, ans.cluster = fit2$cluster)
 d5 <- gather(d4, "question", "answer", 1:6)
 d5$loc.cluster <- as.factor(d5$loc.cluster)
 d5$ans.cluster <- as.factor(d5$ans.cluster)
 d6 <- count(d5, loc.cluster)
+# The clusters for locations group people with close locations, and the clusters
+# for answers group people with similar styles of answers.
+
+# 2 clusters are chosen for locations because I assume that most students are from
+# either Asia or America. 3 clusters are chosen for answers because I assume that there
+# are three types of styles: well organized and good at numbers but not good at conversations, or
+# not well organized and not good at numbers but good at conversations; good at both; and not good
+# at both.
 ```
 
 ##Part III
@@ -186,14 +194,18 @@ Create a visualization that shows the overlap between the two clusters each stud
 
 ```{r}
 ggplot(d5, aes(loc.cluster, fill = ans.cluster)) + geom_bar(stat="count",width=0.5,position='stack') + xlab("location") + ylab("answer")
-# The percentages of two answer clusters in each location cluster are very even for all 3 location # clusters.
+# Combined with the line plot, 40% of students from both locations are good at both.
+# 20% of students from both locations are good at one aspect. And 40% of students are
+# relatively not good at both. There is no geometric pattern involved. 
 ```
 ```{r}
 d7 <- d5 %>% group_by(loc.cluster, ans.cluster) %>% summarise(avg = mean(answer))
 d7$loc.cluster <- as.numeric(d7$loc.cluster)
 ggplot(d7, aes(loc.cluster, avg, colour = ans.cluster)) + geom_line() + xlab("Location") + ylab("Average Answer Score")
 # The average answer score for each answer cluster in each location cluster does not
-# make a geographical pattern.
+# make a geographical pattern. But this plot gives us the information of which answer cluster
+# is for which case I assumed. The cluster with highest average answer score is the students who
+# are good at both; the one around 0 is good at one aspect; the lowest one is not good at both.
 ```
 
 
