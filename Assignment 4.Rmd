@@ -8,13 +8,15 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv")
 
 ```
 
@@ -26,7 +28,7 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- K1[,-1]
 
 ```
 
@@ -47,7 +49,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3)
 
 ```
 
@@ -66,20 +68,21 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+fit <- kmeans(K3,2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
-
+fit$cluster
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3,cluster=as.vector(fit$cluster))
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 
+names(K4) <- c("M1","M2","M3","M4","M5","cluster")
 
 ```
 
@@ -88,14 +91,14 @@ Now we need to visualize the clusters we have created. To do so we want to play 
 First lets use tidyr to convert from wide to long format.
 ```{r}
 
-K5 <- gather(K4, "week", "motivation", 1:5)
+K5 <- gather(K4, "week", "motivation", 1:5) 
 ```
 
 Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,9 +116,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -128,13 +131,13 @@ Now we can plot our line plot using the ggplot command, "ggplot()".
 
 ```{r}
 
-ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+ggplot(K6, aes(week, avg, colour = cluster, group = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
 
 ```
 
 What patterns do you see in the plot?
 
-
+The trends of two clusters have an inverse relationship and have one intersection. For cluster 1, it has an increasing trend which starts with a negative value and end with a positive value. For cluster 2, it decreases from a positive value to a negative one.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
@@ -147,13 +150,40 @@ Look at the number of people in each cluster, now repeat this process for 3 rath
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+```{r}
+D1 <- read.csv("HUDK405020-cluster.csv")
+D2 <- D1[,c(2,3)]
+D3 <- na.omit(D2)
+D4 <- scale(D3)
+fit2 <- kmeans(D4,2)
+D5 <- data.frame(D4, cluster_location=as.vector(fit2$cluster))
+D5$cluster_location <- as.factor(D5$cluster_location)
+ggplot(D5, aes(lat, long, colour = cluster_location)) + geom_line() + xlab("lat") + ylab("long")
+```
+
+
+```{r}
+DF1 <- D1[,c(4,5,6,7,8,9)]
+DF2 <- na.omit(DF1)
+DF3 <- scale(DF2)
+fit3 <- kmeans(DF3,2)
+DF4 <- data.frame(DF3, cluster_answer=as.vector(fit3$cluster))
+names(DF4) <- c("Q1","Q2","Q3","Q4","Q5","Q6","cluster_answer")
+DF5 <- gather(DF4,"Question","Score",1:6)
+DF6 <- DF5 %>% group_by(Question, cluster_answer) %>% summarise(avg_score = mean(Score))
+DF6$Question <- as.numeric(DF6$Question)
+DF6$cluster_answer <- as.factor(DF6$cluster_answer)
+ggplot(DF6, aes(Question, avg_score, colour = cluster_answer, group = cluster_answer)) + geom_line() + xlab("Question") + ylab("Average Score")
+```
+
 
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
-
+DF6<-data.frame(D1,D5$cluster_location,DF4$cluster_answer)
+ggplot(DF4, aes(D1$id, D5$cluster_location,DF4$cluster_answer, colour = DF4$cluster_answer, group = DF4$cluster_answer))+ geom_line() 
 ```
 
 
