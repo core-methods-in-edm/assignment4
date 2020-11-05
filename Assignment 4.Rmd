@@ -2,19 +2,22 @@
 title: "Assignment 4: K Means Clustering"
 ---
 
-In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
+## Part I
 
+In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
 https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
-
 ```{r}
-library()
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
-Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
+Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1"
+
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv", header = TRUE)
 
 ```
 
@@ -26,31 +29,32 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- select(K1, 2:6)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
-
+#### If we recode these missing values, we don't quite know what value should we assign to each people.
+#### If we remove these values, we will lose a lot of observations and thus might bias the result.
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
 
-
 ```{r}
 
-K3 <- na.omit(K2) #This command create a data frame with only those people with no missing values. It "omits" all rows with missing values, also known as a "listwise deletion". EG - It runs down the list deleting rows as it goes.
+K3 <- na.omit(K2)
+
+#This command create a data frame with only those people with no missing values. It "omits" all rows with missing values, also known as a "listwise deletion". EG - It runs down the list deleting rows as it goes.
 
 ```
 
-Another pre-processing step used in K-means is to standardize the values so that they have the same range. We do this because we want to treat each week as equally important - if we do not standardise then the week with the largest range will have the greatest impact on which clusters are formed. We standardise the values by using the "scale()" command.
+Another pre-processing step used in K-means is to standardize the values so that they have the same range. We do this because we want to treat each week as equally important - if we do not standardize then the week with the largest range will have the greatest impact on which clusters are formed. We standardize the values by using the "scale()" command.
 
 ```{r}
 
-K3 <- 
+K3 <- data.frame(scale(K3))
 
 ```
-
 
 Now we will run the K-means clustering algorithm we talked about in class. 
 1) The algorithm starts by randomly choosing some starting values 
@@ -60,42 +64,45 @@ Now we will run the K-means clustering algorithm we talked about in class.
 5) Re-associates all observations closest to this observation
 6) Continues this process until the clusters are no longer changing
 
-Notice that in this case we have 5 variables and in class we only had 2. It is impossible to vizualise this process with 5 variables.
+Notice that in this case we have 5 variables and in class we only had 2. It is impossible to visualize this process with 5 variables.
 
 Also, we need to choose the number of clusters we think are in the data. We will start with 2.
 
 ```{r}
 
-fit <- 
+fit <- kmeans(K3, 2)
 
-#We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
+# We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
-#We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
+# We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
+fit$cluster
 
+# We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-#We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
+K4 = data.frame(K3, fit$cluster)
 
-K4
+# Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 
-#Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
-
+colnames(K4) = c("1", "2", "3", "4", "5", "cluster")
 
 ```
 
 Now we need to visualize the clusters we have created. To do so we want to play with the structure of our data. What would be most useful would be if we could visualize average motivation by cluster, by week. To do this we will need to convert our data from wide to long format. Remember your old friends tidyr and dplyr!
 
 First lets use tidyr to convert from wide to long format.
+
 ```{r}
 
 K5 <- gather(K4, "week", "motivation", 1:5)
+
 ```
 
 Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,9 +120,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -134,28 +141,85 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
-
+#### Value of average motivation higher than zero is defined as cluster 1.
+#### Value of average motivation lower than zero is defined as cluster 2.
+#### For each week, average motivation of people in cluster 1 is greater.
+#### There is a symmetric pattern in the plot.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
 ```{r}
+
 K7 <- count(K4, cluster)
+
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
 
-##Part II
+```{r}
+
+fit_2 = kmeans(K3, 3)
+K4_2 = data.frame(K3, fit_2$cluster)
+colnames(K4_2) = c("1", "2", "3", "4", "5", "cluster")
+K5_2 <- gather(K4_2, "week", "motivation", 1:5)
+K6_2 <- K5_2 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+K6_2$week <- as.numeric(K6_2$week)
+K6_2$cluster <- as.factor(K6_2$cluster)
+ggplot(K6_2, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+
+```
+
+#### 2 cluster grouping is more informative than 3 because it has less interactions between lines.
+
+## Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 
-##Part III
+#### Clustering according to location (lat/long)
+
+```{r}
+
+J = read.csv("HUDK405020-cluster.csv", header = TRUE)
+J1 = select(J, 2:3)
+J1 = data.frame(scale(J1))
+fit.1 = kmeans(J1, 2)
+J1 = data.frame(J1, fit.1$cluster)
+colnames(J1) = c("lat", "long", "cluster")
+J1$cluster = as.factor(J1$cluster)
+ggplot(J1, aes(lat, long, colour = cluster)) + geom_point() + xlab("Latitude") + ylab("Longitude")
+
+```
+
+#### Clustering according to answers to the questions
+
+```{r}
+
+J2 = select(J, 4:9)
+J2 = data.frame(scale(J2))
+fit.2 = kmeans(J2, 2)
+J2 = data.frame(J2, fit.2$cluster)
+colnames(J2) = c("1", "2", "3", "4", "5", "6", "cluster")
+J2 <- gather(J2, "question", "answer", 1:6)
+J2 <- J2 %>% group_by(question, cluster) %>% summarise(avg.answer=mean(answer))
+J2$question <- as.numeric(J2$question)
+J2$cluster <- as.factor(J2$cluster)
+ggplot(J2, aes(question, avg.answer, colour = cluster)) + geom_line()+ xlab("Question") + ylab("Average Answer")
+
+```
+
+
+## Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
 
+D = data.frame(J$lat, J$long, fit.1$cluster, fit.2$cluster)
+names(D) = c("lat", "long", "geo.cluster", "answer.cluster")
+D$geo.cluster = as.factor(D$geo.cluster)
+D$answer.cluster = as.factor(D$answer.cluster)
+ggplot(D, aes(lat, long, colour = answer.cluster)) + geom_point()+ xlab("Latitude") + ylab("Longitude")
+
 ```
 
-
-## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
-
+#### From the ggplot, we see some geographical patterns. In high-latitude / low-longitude area, there are much more students with high score than with low score. In high-latitude / high-longitude area, though there are still more students with high score than with low score, the difference between numbers of students in two score groups are much more smaller than in high-latitude / low-longitude area.
