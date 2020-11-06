@@ -1,5 +1,6 @@
 ---
 title: "Assignment 4: K Means Clustering"
+Author: "Yixiong Xu"
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -8,13 +9,15 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv")
 
 ```
 
@@ -26,12 +29,13 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- select(K1, 2:6)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
+##NA represents missing data in the cluster functions (kmean).We can use na. rm() = TRUE to remove it. We can also replace it with a negative number or 0, by using K1[is.na(K1)] <- 0. However, this may cause the distribution of the data to change, which might end in a change in cluster's linear regression, and the results may no longer be accurate.
 
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
@@ -47,7 +51,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3)
 
 ```
 
@@ -65,8 +69,7 @@ Notice that in this case we have 5 variables and in class we only had 2. It is i
 Also, we need to choose the number of clusters we think are in the data. We will start with 2.
 
 ```{r}
-
-fit <- 
+fit <- kmeans(K3, 2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
@@ -76,11 +79,14 @@ fit <-
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3, fit$cluster)
+
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
+```
 
-
+```{r}
+names(K4) <- c("1","2","3","4","5","cluster")
 ```
 
 Now we need to visualize the clusters we have created. To do so we want to play with the structure of our data. What would be most useful would be if we could visualize average motivation by cluster, by week. To do this we will need to convert our data from wide to long format. Remember your old friends tidyr and dplyr!
@@ -95,7 +101,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,9 +119,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -134,6 +140,7 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
+**Two symmetrical curves. But the red line has a larger floating band. And the average motivation of cluster 1 is on a downward trend, from positive to below 0. Cluster 2's average motivation is on the rise, from below zero to positive value.
 
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
@@ -144,9 +151,46 @@ K7 <- count(K4, cluster)
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
 
+**I think the grouping methods of the two clusters are more informative. Since by comparing the linear relationships between the two clusters, we can accurately determine the relationship between the week variable and class-motivation for two clusters. If we increase the clusters to three, a portion of the missing values affects the result, resulting in the data.frame not being clear enough
+
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
+```{r}
+D1 <- read.csv("HUDK405020-cluster.csv")
+D2 <- data.frame(scale(D1[,c(2:3)]))
+fit2 <- kmeans(D2,2)
+fit2$cluster
+D3 <- data.frame(D2, fit2$cluster)
+names(D3) <- c("lat","long", "clusterlocation")
+D3$cluster <- as.factor(D3$cluster)
+plot(D3, col = D3$cluster)
+ggplot(D3, aes(lat, long, colour=clusterlocation)) + geom_point(stat="identity", fill= "blue", colour= "black", size = 1)
+D4 <- D1 %>% select("compare.features","math.accuracy","planner.use","enjoy.discuss","enjoy.group","meet.deadline") %>% scale
+D4 <- data.frame(D4)
+fit3 <- kmeans(D4, 5)
+fit3$cluster
+D5 <- data.frame(D4, fit3$cluster)
+defaultColors <- c("#CCFF00", "#CCFFFF", "#99FFFF", "#99FFCC", "#990099", "#9999FF", "#999999")
+str(defaultColors)
+str(lapply(defaultColors, function(color) { list(color=color) }))
+library(doBy) 
+bylength = function(D5){length(D5)}
+newdt = bylength(D5 ~From.math.accuracy + To.math.accuracy)
+D5 <- data.frame(cbind(D5,fit2$cluster))
+my_vec = 1: 7
+LETTERS[1:7]
+names(my_vec) = LETTERS[1:7]
+my_vec
+str(levels("math.accuracy"))
+names(D5) <- c("compare.features","math.accuracy","planner.use","enjoy.discuss","enjoy.group","meet.deadline","clusteraccuracy")
+D5$cluster <- as.factor(D5$cluster)
+ggplot(D5, aes(D1$id, math.accuracy, colour=clusteraccuracy)) + geom_point(stat="identity", fill= "blue", colour= "lightblue", size = 1)
+labs(y= "math.accuracy", x = "clusteraccuracy")
+
+```
+
 
 ##Part III
 
@@ -154,8 +198,20 @@ Create a visualization that shows the overlap between the two clusters each stud
 
 ```{r}
 
+ggplot(D3, aes(lat, long, colour=clusterlocation)) + geom_point(stat="identity", fill= "blue", colour= "black", size = 1)
+
+ggplot(D5, aes(D1$id, math.accuracy, colour=clusteraccuracy)) + geom_point(stat="identity", fill= "blue", colour= "red", size = 1)
+
+D6 <- data.frame(D3, D5)
+
+ggplot(D6, aes(D1$id, math.accuracy,colour=clusteraccuracy, shape=as.factor(D3$clusterlocation))) + geom_point(fill= "grey", colour= "green", size = 1.2)
+
+labs(y= "math.accuracy", x = "students.identity")
+
+##There are four groups. The two clusters are mainly gathered on the positive correlation of 0.4 of math.accuracy.
+
 ```
 
 
-## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
-
+## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 4 repository.
+**rm(list=ls())
