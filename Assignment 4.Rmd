@@ -31,6 +31,7 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 K2 <- select(K1, c(2:6))
+
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
