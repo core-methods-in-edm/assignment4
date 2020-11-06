@@ -258,7 +258,10 @@ Create a visualization that shows the overlap between the two clusters each stud
 
 ```{r}
 DF <- data.frame(table(ML$fit2c.cluster,ML$fit3a.cluster))
+ML2 <- ML %>% group_by(fit2c.cluster,fit3a.cluster) %>% summarize(count = n())
+ggplot(ML2, aes(x = fit2c.cluster, y = fit3a.cluster, size = count)) + geom_point()
 
+#or
 #install.packages("vcd")
 library(vcd)
 P1 <- structable(fit2c$cluster ~ fit3a$cluster)
