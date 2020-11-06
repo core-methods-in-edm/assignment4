@@ -10,6 +10,7 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 ```{r}
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 
 ```
 
@@ -98,7 +99,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 library(dplyr)
-K6 <- K5 %>% group_by(week, Cluster) %>% summarise(K5, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, Cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -116,7 +117,7 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- as.factor(K6$week)
+K6$week <- as.numeric(K6$week)
 
 K6$Cluster <- as.factor(K6$Cluster)
 
@@ -137,7 +138,7 @@ ggplot(K6, aes(week, avg, colour = Cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
-all groups are showing low average motivation except the first group
+I see a fluctuating pattern that indicates two cluster of student demonstrating opposite average motivation in five weeks. Cluster 1 has an average-higher motivation then cluster 2.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
@@ -147,7 +148,7 @@ K7 <- count(K4, Cluster)
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
 
-i think clustering into 2 groups is more informative.
+i think clustering into 2 groups is more informative. Clustering into 3 groups has more areas that overlap each other, thus can be less accurate when forming meaningful conclusion.
 
 ```{r}
 fit2 <- kmeans(K3,3)
@@ -158,10 +159,9 @@ names(KK4)<- c("1","2","3","4","5","Cluster")
 KK5 <- gather(KK4, "week", "motivation", 1:5)
 
 library(dplyr)
-KK6 <- KK5 %>% group_by(week, Cluster) %>% summarise(KK5, avg = mean(motivation))
+KK6 <- KK5 %>% group_by(week, Cluster) %>% summarise(avg = mean(motivation))
 
-KK6$week <- as.factor(KK6$week)
-
+KK6$week <- as.numeric(KK6$week)
 KK6$Cluster <- as.factor(KK6$Cluster)
 
 library(ggplot2)
@@ -178,33 +178,61 @@ D1 <- read.csv("HUDK405020-cluster.csv",header = TRUE, stringsAsFactors = TRUE)
 
 D2 <- select(D1,2:3) %>% scale()
 D2 <-data.frame(D2)
-fit3 <- kmeans(D2,2)
-d2 <- data.frame(cbind(D2,fit3$cluster))
-names(d2)<- c("lat","long","Cluster1")
 
+plot(D2$long,D2$lat)
+
+#kmeans
+fit3 <- kmeans(D2,2)
+fit3a <- kmeans(D2,2)
+fit3b <- kmeans(D2,2)
+
+fit3$tot.withinss
+fit3a$tot.withinss
+fit3b$tot.withinss
+
+fit3$betweenss
+fit3a$betweenss
+fit3b$betweenss
+
+#fit3
+
+#answers to questions
 D3 <- select(D1, 4:9) %>% scale() %>% data.frame()
 fit4 <- kmeans(D3,2)
-d3 <-data.frame(cbind(D3,fit4$cluster))
-names(d3)<- c("compare,features","math.accuracy","planner.use","enjoy.discuss","enjoy.group","meet.deadline","Cluster2")
+fit4a <- kmeans(D3,2)
+fit4b <- kmeans(D3,2)
+fit4c <- kmeans(D3,2)
 
-d2$Cluster1 <- as.factor(d2$Cluster1)
-d3$Cluster2 <- as.factor(d3$Cluster2)
+fit4$tot.withinss
+fit4a$tot.withinss
+fit4b$tot.withinss
+fit4c$tot.withinss
 
-ggplot(d2, aes(lat, long, colour = Cluster1)) + geom_line()
-ggplot(d3, aes(math.accuracy, enjoy.group, colour = Cluster2)) + geom_point()
+fit4$betweenss
+fit4a$betweenss
+fit4b$betweenss
+fit4c$betweenss
+
+ML <- data.frame(D1$compare.features, D1$math.accuracy, D1$planner.use, D1$enjoy.discuss, D1$enjoy.group, D1$meet.deadline,fit3$cluster, D1$lat, D1$long, fit4$cluster)
+library(tidyverse)
+pairs(ML)
 ```
-
 
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
-ggplot(d2, aes(lat, long, colour = Cluster1)) + geom_line()
-ggplot(d3, aes(math.accuracy, enjoy.group, colour = Cluster2)) + geom_point()
+DF <- data.frame(table(ML$fit3.cluster,ML$fit4.cluster))
+ML2 <- ML %>% group_by(fit3.cluster,fit4.cluster) %>% summarize(count= n())
 
-d4 <- data.frame(d2,d3)
-ggplot(d4, aes(lat,long, col=Cluster2, shape=Cluster1))+ geom_point()
+ggplot(ML2, aes(x = fit3.cluster, y = fit4.cluster, size= count))+ geom_point()
+
+#install.packages("vcd") 
+#library(vcd)
+#P1 <- structable(fit3$cluster ~ fit4$cluster)
+#mosaic(P1, shade=TRUE, legend=TRUE) 
+
 ```
 Cluster1, which is based on first according location demonstrate
 
