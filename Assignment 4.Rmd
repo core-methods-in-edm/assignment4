@@ -1,5 +1,7 @@
 ---
 title: "Assignment 4: K Means Clustering"
+author: "He Chen"
+date: 11/05/2020
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -8,13 +10,15 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv")
 
 ```
 
@@ -26,13 +30,13 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- select(K1, -1)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
-
+If we recode those values, it may change the distribution of the data significantly depending on the way we choose. We only have limited data in this case, so the effect of the fake data is huge. If we remove them, the lack of data will also lead to biased result.
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
 
@@ -47,8 +51,8 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
-
+K3 <- scale(K3)
+K3 <- as.data.frame(K3)
 ```
 
 
@@ -66,7 +70,7 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+fit <- kmeans(K3,2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
@@ -76,9 +80,10 @@ fit <-
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3,fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
+names(K4) <- c(1,2,3,4,5,"cluster")
 
 
 ```
@@ -95,7 +100,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,9 +118,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -134,7 +139,7 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
-
+Cluster 1 and cluster 2 have an inverse trend. Y values for both clusters are changing alternatively by following either a low-to-high pattern or high-to-low pattern.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
@@ -144,9 +149,52 @@ K7 <- count(K4, cluster)
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
 
+```{r}
+fit2 <- kmeans(K3,3)
+K4_2 <- data.frame(K3,fit2$cluster)
+names(K4_2) <- c(1,2,3,4,5,'cluster')
+K5_2 <- gather(K4_2, 'week', 'motivation', 1:5)
+K6_2 <- K5_2 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+K6_2$week <- as.numeric(K6_2$week)
+K6_2$cluster <- as.factor(K6_2$cluster)
+ggplot(K6_2, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+```
+
+According to the graph, it seems that 3-cluster grouping is more informative, because it shows three different kinds of trends, wheras 2-cluster only shows two trends.
+
+
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
+```{r}
+d1 <- read.csv('HUDK405020-cluster.csv')
+d2 <- select(d1,-1)
+d3 <- scale(d2)
+d3 <- as.data.frame(d3)
+geo_data <- select(d3, 1:2)
+answers_data <- select(d3,3:length(d3))
+
+geo_fit <- kmeans(geo_data, 2)
+geo_cluster <- data.frame(geo_data, geo_fit$cluster)
+
+answers_fit <- kmeans(answers_data, 2)
+answers_cluster <- data.frame(answers_data, answers_fit$cluster)
+
+clusters_summarizing <- data.frame(d1$lat,d1$long,geo_cluster$geo_fit.cluster, answers_fit$cluster)
+names(clusters_summarizing) <- c('lat', 'long', 'geo_cluster','answer_cluster')
+clusters_summarizing$geo_cluster <- as.factor(clusters_summarizing$geo_cluster)
+clusters_summarizing$answer_cluster <- as.factor(clusters_summarizing$answer_cluster)
+
+cluster_color <- c('red', 'blue')
+clusters_summarizing$geoColor <- clusters_summarizing$geo_cluster
+levels(clusters_summarizing$geoColor) <- cluster_color
+clusters_summarizing$ansColor <- clusters_summarizing$answer_cluster
+levels(clusters_summarizing$ansColor) <- cluster_color
+
+
+```
+
 
 ##Part III
 
@@ -154,7 +202,22 @@ Create a visualization that shows the overlap between the two clusters each stud
 
 ```{r}
 
+plot(clusters_summarizing$lat,clusters_summarizing$long,col=as.character(clusters_summarizing$ansColor), pch = 17, cex = 2, xlab = "Lat", ylab = "Long")
+
 ```
+
+According to this graph, there is a certain relationship between location and their answers. It seems like people who live in a place with high latitude and low longitude will are more likely belong to cluster 1. 
+
+
+
+```{r}
+
+plot(clusters_summarizing$lat,clusters_summarizing$long,col=as.character(clusters_summarizing$geoColor), pch = 17, cex = 2, xlab = "Lat", ylab = "Long")
+points(clusters_summarizing$lat,clusters_summarizing$long,col=as.character(clusters_summarizing$ansColor), pch = 15, cex = 1)
+
+```
+
+According to this graph, it seems like geo cluster numbers and answers cluster numbers for people who live in a place with higher latitude and lower longitude are more like the same (i.e., triangle and square have the same color).
 
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
