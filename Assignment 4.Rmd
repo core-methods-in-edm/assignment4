@@ -17,7 +17,8 @@ Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as 
 ```{r}
 
 K1 <- read.csv("Class_Motivation.csv")
-
+K1b<-gather(K1,week,measure,2:6)
+plot(as.factor(K1b$week),K1b$measure)
 ```
 
 This file contains the self-reported motivation scores for a class over five weeks. We are going to look for patterns in motivation over this time and sort people into clusters based on those patterns.
@@ -28,7 +29,7 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- K1 %>% select(-id)
+K2 <- select(K1,2:6)
 
 ```
 
@@ -52,7 +53,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3a <- scale(K3)
+K3 <- scale(K3)
 
 ```
 
@@ -71,16 +72,31 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- kmeans(K3a,centers=2)
+fita <- kmeans(K3,centers=2)
+fitb <- kmeans(K3,centers=2)
+fitc <- kmeans(K3,centers=2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
-fit$cluster
+fita$cluster
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4
-K4<-data.frame(K3,fit$cluster)
+K4<-data.frame(K3,fita$cluster, fitb$cluster, fitc$cluster)
 
+fita$withinss
+fitb$withinss
+fitc$withinss
+
+fita$tot.withinss
+fitb$tot.withinss
+fitc$tot.withinss
+
+fita$betweenss
+fitb$betweenss
+fitc$betweenss
+
+K4 <- data.frame(K3, fita$cluster)
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 
 names(K4)<-c("1","2","3","4","5","cluster")
@@ -92,7 +108,7 @@ Now we need to visualize the clusters we have created. To do so we want to play 
 First lets use tidyr to convert from wide to long format.
 ```{r}
 
-K5 <- gather(K4, "week", "motivation", 1:5)
+K5 <- tidyr::gather(K4, "week", "motivation", 1:5)
 ```
 
 Now lets use dplyr to average our motivation values by week and by cluster.
@@ -138,7 +154,7 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 ```{r}
-# Cluster 2 has higher motivation than Cluster 1 for all 5 weeks. In the last week, the motivation of cluster 1 exceeds that of 2.The clusters tend to follow opposite trends in week-by-week motivation trends.For example,the average motivation of cluster 2 decreases from week 1 to week 2 while cluster 1 increases. But in the last week(from week 4 to week 5),  the average motivations of both cluster1 and cluster 2 increase, and this week's changes seem to be the largest.
+# Cluster 1 has higher motivation than Cluster 2 for all 4(week 1-4) weeks.But the average motivation of Cluster 2 exceeds that of cluster 1 in the final week. The clusters tend to follow opposite trends in week-by-week motivation trends.For example,the average motivation of cluster 1 decreases from week 1 to week 2 while cluster 2 increases. But from the week 4 to week 5, cluster 1 continues to decline in line with last week's trend, while cluster 2 continues to rise in line with last week's trend
 ```
 
 
@@ -146,15 +162,16 @@ What patterns do you see in the plot?
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
 ```{r}
-K7 <- count(K4, cluster)
+K7 <-dplyr::count(K4, cluster)
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+
 ```{r}
-fit1 <- kmeans(K3a, centers = 3)
+fit1 <- kmeans(K3, centers = 3)
 K4 <- data.frame(K3,fit1$cluster)
 names(K4) <- c("1","2","3","4","5","cluster") 
-K5 <- gather(K4, "week", "motivation", 1:5)
+K5 <- tidyr::gather(K4, "week", "motivation", 1:5)
 K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 K6$week <- as.numeric(K6$week)
 K6$cluster <- as.factor(K6$cluster)
@@ -162,9 +179,12 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 ```
 
 
+
+
+
 ```{r}
-K7 <- count(K4, cluster)
-K7
+K7 <-dplyr::count(K4, cluster)
+
 
 #I think that clustering the students into 3 groups is more informative. 
 ```
@@ -173,27 +193,62 @@ K7
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 ```{r}
-ltlg<-read.csv("HUDK405020-cluster.csv")
-ltlg1<-ltlg%>%select(lat,long)
-ltlg2<-scale(ltlg1)
-latlong<-kmeans(ltlg1,2)
-latlong$cluster
-df1<-data.frame(ltlg1,latlong$cluster)
-df1$latlong.cluster <- as.factor(df1$latlong.cluster)
+library(tidyverse)
+M1<-read.csv("HUDK405020-cluster.csv")
 
-ggplot(df1,aes(x = lat, y = long, color = latlong.cluster))+
-         geom_point()
+#according answers:
+
+M2<-select(M1,4:9)
+
+#note：
+#Dealing with missing values：
+#First convert the blank cells to NAs and convert all columns to numeric
+#M2[M2==""] <- NA
+#M2 <- M2 %>% mutate_all(funs(as.numeric(levels(.))[.]))
+#Solution 1: Remove students with missing values - but we will lose those students and be unable to allocate them to a group
+#M2 <- na.omit(M2)
+
+fit2a <- kmeans(M2, 1)
+fit2b <- kmeans(M2, 2)
+fit2c <- kmeans(M2, 3)
+fit2d <- kmeans(M2, 4)
+fit2e <- kmeans(M2, 5)
+fit2f <- kmeans(M2, 6)
+fit2g <- kmeans(M2, 7)
+
+mss<- c(fit2a$tot.withinss,fit2b$tot.withinss,fit2c$tot.withinss,fit2d$tot.withinss,fit2e$tot.withinss,fit2f$tot.withinss,fit2g$tot.withinss, fit2a$betweenss,fit2b$betweenss,fit2c$betweenss,fit2d$betweenss,fit2e$betweenss,fit2f$betweenss,fit2g$betweenss)
+
+clusters <- c(seq(1,7,1),seq(1,7,1))
+col <- c(rep("blue",7), rep("red",7))
+plot(clusters, mss, col = col)
 
 
-aq<-read.csv("HUDK405020-cluster.csv")
-aq1<-aq%>%select(-lat,-long,-id)
-aq2<-scale(aq1)
-asqws<-kmeans(aq2,3)
-df2<-data.frame(aq1,asqws$cluster)
-df2$asqws.cluster<-as.factor(df2$asqws.cluster)
-ggplot(df2, aes(enjoy.group,enjoy.discuss, col=asqws.cluster))+geom_point()
+#according location:
 
-tacord<-data.frame(cbind(ltlg,df1$latlong.cluster,df2$asqws.cluster))
+LL1 <- select(M1, 2:3)
+plot(LL1$long, LL1$lat)
+fit3a <- kmeans(LL1, 2)
+fit3b <- kmeans(LL1, 2)
+fit3c <- kmeans(LL1, 2)
+
+fit3a$withinss
+fit3b$withinss
+fit3c$withinss
+fit3a$tot.withinss
+fit3b$tot.withinss
+fit3c$tot.withinss
+fit3a$betweenss
+fit3b$betweenss
+fit3c$betweenss
+
+LL2 <- data.frame(LL1, fit3a$cluster)
+names(LL2) <- c("lat","long","location_cluster")
+
+
+#Combine 
+ML <- data.frame(M1$compare.features, M1$math.accuracy,M1$planner.use,M1$enjoy.discuss,M1$enjoy.group,M1$meet.deadline, fit2c$cluster, M1$lat,M1$long, fit3a$cluster)
+
+pairs(ML)
 
 ```
 
@@ -202,12 +257,15 @@ tacord<-data.frame(cbind(ltlg,df1$latlong.cluster,df2$asqws.cluster))
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
-K8<-tacord%>% group_by(df1.latlong.cluster,df2.asqws.cluster) %>% count()
-K8
+DF <- data.frame(table(ML$fit2c.cluster,ML$fit3a.cluster))
 
-ggplot(tacord, mapping = aes(x=long,y=lat,shape=df1.latlong.cluster,col= df2.asqws.cluster)) + geom_point(size = 3) + geom_jitter(size = 3)
+#install.packages("vcd")
+library(vcd)
+P1 <- structable(fit2c$cluster ~ fit3a$cluster)
+mosaic(P1, shade=TRUE, legend=TRUE) 
 
-# It seems that there are no geographical patterns that correspond to the answers.
+
+# It seems that there are geographical patterns that correspond to the answers.
 ```
 
 
