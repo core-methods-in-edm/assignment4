@@ -17,6 +17,7 @@ Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as 
 
 K1 <- read.csv("Class_Motivation.csv",header=TRUE)
 
+
 ```
 
 This file contains the self-reported motivation scores for a class over five weeks. We are going to look for patterns in motivation over this time and sort people into clusters based on those patterns.
@@ -139,6 +140,8 @@ It would be useful to determine how many people are in each cluster. We can do t
 K7 <- count(K4, cluster)
 ```
 
+Cluster 1 has 15 people, and cluster 2 has 8 people.
+
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
 ```{r}
 fit2 <- kmeans(K3,3)
@@ -170,26 +173,31 @@ DT <- read.csv("HUDK405020-cluster.csv")
 # select lat/long
 DT1 <- select(DT,2:3)
 # cluster students by lat & long
-fit.1 <- kmeans(DT1,2)
-DT2 <- data.frame(DT1, fit.1$cluster)
-names(DT2)[3] <- "cluster"
-DT3 <- gather(DT2,"location","specific",1:2)
-DT4 <- DT3 %>% group_by(location, cluster) %>% summarise(avg = mean(specific))
-```
+plot(DT1$long, DT1$lat)
 
-```{r}
-# select answers to the questions
+fit1a <- kmeans(DT1,2)
+fit1b <- kmeans(DT1,2)
+fit1c <- kmeans(DT1,2)
+
+fit1a$tot.withinss
+fit1b$tot.withinss
+fit1c$tot.withinss
+
+# Select questions and answers
 DT5 <- select(DT, 4:9)
-fit.2 <- kmeans(DT5,2)
-DT6 <- data.frame(DT5, fit.2$cluster)
-names(DT6)[7] <- "cluster"
-DT7 <- gather(DT6, "questions", "answers", 1:6)
-DT8 <- DT7 %>% group_by(questions, cluster) %>% summarise(avg = mean(answers))
-DT8$questions <- as.numeric(as.factor(DT8$questions))
-DT8$cluster <- as.factor(DT8$cluster)
 
+fit2a <- kmeans(DT5,2)
+fit2b <- kmeans(DT5,3)
+fit2c <- kmeans(DT5,4)
 
+fit2a$tot.withinss
+fit2b$tot.withinss
+fit2c$tot.withinss
+
+# Combine together
+DT2 <- data.frame(DT$compare.features, DT$math.accuracy, DT$planner.use, DT$enjoy.discuss, DT$enjoy.group, DT$meet.deadline, fit2a$cluster, DT$long, DT$lat, fit1b$cluster)
 ```
+
 
 
 ##Part III
@@ -197,10 +205,14 @@ DT8$cluster <- as.factor(DT8$cluster)
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
-
-ggplot(DT8, aes(questions, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+pairs(DT2)
+table(DT2$fit2a.cluster, DT2$fit1b.cluster)
+(DT_count1 <- count(DT2, fit1b.cluster))
+(DT_count2 <- count(DT2, fit2a.cluster))
+DT3 <- DT2 %>% group_by(fit2a.cluster, fit1b.cluster) %>% summarize(count=n())
+ggplot(DT3, aes(x=fit1b.cluster, y = fit2a.cluster, size = count))+geom_point()+ xlab("location") + ylab("scores")
 ```
-
+Students are spreading around the world mainly in Asia and North America, so I choose to cluster students into two groups by using lattitude and longtitude. Moreover, I think the answers can be divided into two categories - high and low. In this way, we can see that there is overlap between two clusters each student belongs to in Part II. There are geographical patterns that correspond to the answers. In both locations, students' answers are mainly high.
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
 
