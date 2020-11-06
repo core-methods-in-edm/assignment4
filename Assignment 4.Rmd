@@ -1,4 +1,4 @@
- ---
+---
 title: "Assignment 4: K Means Clustering"
 ---
 
@@ -13,6 +13,7 @@ library(dplyr)
 library(stringr)
 library(igraph)
 library(ggplot2)
+library(tidyverse)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
@@ -141,7 +142,7 @@ What patterns do you see in the plot?
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
 ```{r}
-K7 <- count(K4, cluster)
+K7 <- dplyr::count(K4, cluster)
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
@@ -159,28 +160,36 @@ ggplot(K10, aes(week, avg, colour=cluster)) + geom_line() + xlab("week") + ylab(
 ```
 
 ##Part II
+```{r}
+M1 <- read.csv("HUDK405020-cluster.csv", header = TRUE)
+M2 <- select(M1,4:9)
+M2 <- na.omit(M2)
+fit2a <- kmeans(M2, 1)
+fit2b <- kmeans(M2, 2)
+fit2c <- kmeans(M2, 3)
+fit2d <- kmeans(M2, 4)
+fit2e <- kmeans(M2, 5)
+fit2f <- kmeans(M2, 6)
+fit2g <- kmeans(M2, 7)
+mss<- c(fit2a$tot.withinss,fit2b$tot.withinss,fit2c$tot.withinss,fit2d$tot.withinss,fit2e$tot.withinss,fit2f$tot.withinss,fit2g$tot.withinss,fit2a$betweenss,fit2b$betweenss,fit2c$betweenss,fit2d$betweenss,fit2e$betweenss,fit2f$betweenss,fit2g$betweenss)
+clusters <- c(seq(1,7,1),seq(1,7,1))
+col <- c(rep("blue",7), rep("red",7))
+plot(clusters, mss, col = col)
+```
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 ```{r}
-DF1 <- read.csv("HUDK405020-cluster.csv")
-DF2 <- DF1 %>% select(lat, long) %>% scale
-DF2 <- data.frame(DF2)
-fit1 <- kmeans(DF2,2)
-fit1$cluster
-DF3 <- data.frame(DF2, fit1$cluster)
-names(DF3) <- c("lat", "long", "clusterlocation")
-DF3$cluster <- as.factor(DF3$cluster)
-ggplot(DF3, aes(lat, long, colour=clusterlocation)) + geom_point()
+L1 <- select(M1, "lat","long")
+plot(L1$long, L1$lat)
+fit3a <- kmeans(L1, 2)
+fit3b <- kmeans(L1, 2)
+fit3c <- kmeans(L1, 2)
+fit3a$tot.withinss
+fit3b$tot.withinss
+fit3c$tot.withinss
+ML <- data.frame(M1$compare.features,M1$math.accuracy,M1$planner.use,M1$enjoy.discuss,M1$enjoy.group,M1$meet.deadline, fit2c$cluster, M1$lat,M1$long, fit3a$cluster)   #Combine everything together
+pairs(ML)
 
-#what is the meaning of "their answers to the questions"
-DF4 <- DF1 %>% select("math.accuracy") %>% scale
-DF4 <- data.frame(DF4)
-fit2 <- kmeans(DF4,2)
-fit2$cluster
-DF5 <- data.frame(DF4, fit2$cluster)
-names(DF5) <- c("math.accuracy", "clusteraccuracy")
-DF5$cluster <- as.factor(DF5$cluster)
-ggplot(DF5, aes(DF1$id,math.accuracy, colour=clusteraccuracy)) + geom_point()
 
 ```
 
@@ -189,10 +198,56 @@ ggplot(DF5, aes(DF1$id,math.accuracy, colour=clusteraccuracy)) + geom_point()
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
-ggplot(DF5, aes(DF1$id, math.accuracy,colour=clusteraccuracy, shape=as.factor(DF3$clusterlocation))) + 
-  geom_point() + xlab("ID") + ylab("Math.Accuracy")
+table(ML$fit2c.cluster,ML$fit3a.cluster)
+
+ML2 <- ML %>% group_by(fit2c.cluster,fit3a.cluster) %>% summarize(count = n())
+#ML2$fit3a.cluster <- ifelse(ML2$fit3a.cluster == 1, "A","B")
+ggplot(ML2, aes(x = fit2c.cluster, y = fit3a.cluster, size = count)) + geom_point()
+#geom_bar(stat = "identity", position = "fill", color = "black")
+
+library(vcd)
+P1 <- structable(fit2c$cluster ~ fit3a$cluster)
+mosaic(P1, shade=TRUE, legend=TRUE) 
+#This shows how much overlap there are between the groups of clusters
 ```
-
-
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
+
+
+
+
+
+
+
+
+
+
+Below are my original work, I did try myself and did not just copy the solution :)
+```{r}
+DF1 <- read.csv("HUDK405020-cluster.csv")
+DF2 <- DF1 %>% select(lat, long) %>% scale
+DF2 <- data.frame(DF2)
+fit1 <- kmeans(DF2,2)
+fit1$cluster
+
+DF3 <- data.frame(DF2, fit1$cluster)
+names(DF3) <- c("lat", "long", "clusterlocation")
+DF3$cluster <- as.factor(DF3$cluster)
+ggplot(DF3, aes(lat, long, colour=clusterlocation)) + geom_point()
+```
+```{r}
+#what is the meaning of "their answers to the questions"
+DF4 <- DF1 %>% select("math.accuracy") %>% scale
+DF4 <- data.frame(DF4)
+fit2 <- kmeans(DF4,2)
+fit2$cluster
+
+DF5 <- data.frame(DF4, fit2$cluster)
+names(DF5) <- c("math.accuracy", "clusteraccuracy")
+DF5$cluster <- as.factor(DF5$cluster)
+ggplot(DF5, aes(DF1$id,math.accuracy, colour=clusteraccuracy)) + geom_line()
+```
+```{r}
+ggplot(DF5, aes(DF1$id, math.accuracy,colour=clusteraccuracy, shape=as.factor(DF3$clusterlocation))) + 
+  geom_line() + xlab("ID") + ylab("Math.Accuracy")
+```
 
