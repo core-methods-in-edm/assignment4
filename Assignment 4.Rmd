@@ -18,6 +18,8 @@ Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as 
 ```{r}
 
 K1 <- read.csv("Class_Motivation.csv")
+K1b <- gather(K1, week, measure, 2:6)
+plot (as.factor(K1b$week), K1b$measure)
 
 ```
 
@@ -69,17 +71,30 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- kmeans(K3,2)
+fita <- kmeans(K3,2)
+fitb <- kmeans(K3,2)
+fitc <- kmeans(K3,2)
+
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
-
+fita$cluster
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4 <- data.frame(K3, fit$cluster)
+K4 <- data.frame(K3, fita$cluster, fitb$cluster, fitc$cluster)
+
+fita$tot.withinss
+fitb$tot.withinss
+fitc$tot.withinss
+
+fita$betweenss
+fitb$betweenss
+fitc$betweenss
+
+K4 <- data.frame(K3, fita$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 names(K4) <-  c("1","2","3","4","5","cluster")
@@ -155,7 +170,7 @@ I think 3 clusters format is more informative.
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 
 ```{r}
-D1 <- read.csv("HUDK405020-cluster.csv")
+D1 <- read.csv("HUDK405020-cluster.csv", header = TRUE)
 ```
 
 #according location cluster
@@ -166,13 +181,31 @@ D3 <- data.frame(D2, fit1$cluster)
 names(D3) <- c("lat","long","location_cluster")
 ggplot(D3, aes(lat,long,col = location_cluster)) + geom_point()
 ```
-#answers to the questions
+#according answers to the questions
 ```{r}
-D4 <- select(D1, 5)
-fit2 <- kmeans(D4, 5)
-D5 <- data.frame(D4, fit2$cluster)
-names(D5) <- c("accuracy","accuracy_cluster")
-ggplot(D5, aes(D1$id, accuracy, col=accuracy_cluster)) + geom_point() + xlab("Student ID") + ylab("Math Accuracy")
+D4 <- select(D1, 4:9)
+
+fit2a <- kmeans(D4, 1)
+fit2b <- kmeans(D4, 2)
+fit2c <- kmeans(D4, 3)
+fit2d <- kmeans(D4, 4)
+fit2e <- kmeans(D4, 5)
+fit2f <- kmeans(D4, 6)
+fit2g <- kmeans(D4, 7)
+
+mss <- c(fit2a$tot.withinss, fit2b$tot.withinss, fit2c$tot.withinss, fit2d$tot.withinss, fit2e$tot.withinss, fit2f$tot.withinss, fit2g$tot.withinss, fit2a$betweenss, fit2b$betweenss, fit2c$betweenss, fit2d$betweenss, fit2e$betweenss, fit2f$betweenss, fit2g$betweenss)
+
+clusters <- c(seq(1,7,1),seq(1,7,1))
+col <- c(rep("blue",7), rep("red",7))
+plot(clusters, mss, col=col)
+```
+
+#combine everything together
+```{r}
+DL <- data.frame(D1$compare.features, D1$math.accuracy, D1$planner.use, D1$enjoy.discuss, D1$enjoy.group, D1$meet.deadline, fit1$cluster, D1$lat, D1$long, fit2g$cluster)
+
+pairs(DL)
+
 ```
 
 ##Part III
@@ -180,9 +213,12 @@ ggplot(D5, aes(D1$id, accuracy, col=accuracy_cluster)) + geom_point() + xlab("St
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
-ggplot(D5, aes(D1$id, accuracy,col=accuracy_cluster, shape=as.factor(D3$location_cluster))) + 
-  geom_point() + 
-  xlab("Student ID") + ylab("Math Accuracy")
+table(DL$fit1.cluster, DL$fit2g.cluster)
+
+#install.packages("vcd")
+library(vcd)
+P1 <- structable(fit1$cluster ~ fit2g$cluster)
+mosaic(P1, shade = TRUE, legend = TRUE)
 ```
 
 
