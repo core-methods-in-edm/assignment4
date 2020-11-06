@@ -125,7 +125,7 @@ K5
 Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
-
+library(dplyr)
 K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 ```
 
@@ -176,9 +176,15 @@ It would be useful to determine how many people are in each cluster. We can do t
 
 ```{r}
 K7 <- count(K4, cluster)
+K7 <- dplyr::count(K4, cluster)
+
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+```{r}
+#The 3 clusters would be more informative as it further differentiate people in the pool based on their different levels of motivations. It provides a greater degree of nuance in the difference of clusters. 
+```
+
 
 ##Part II
 
@@ -230,9 +236,15 @@ pairs(ML)
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
+table(ML$fit2c.cluster,ML$fit3a.cluster)
+ML2 <- ML %>% group_by(fit2c.cluster,fit3a.cluster) %>% summarize(count = n())
+ggplot(ML2, aes(x = fit2c.cluster, y = fit3a.cluster, size = count)) + geom_point()
 
+library(vcd)
+P1 <- structable(fit2c$cluster ~ fit3a$cluster)
+mosaic(P1, shade=TRUE, legent=TRUE)
 
-DF <- data.frame(table(ML$fit2c.cluster,ML$fit3a.cluster))
+#There are great overlap between the two clusters. 
 ```
 
 ```{r}
