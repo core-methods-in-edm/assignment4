@@ -11,6 +11,7 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(vcd)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
@@ -209,6 +210,22 @@ D$clusterbyanswer <- as.factor(D$clusterbyanswer)
 ggplot(D, aes(longitude, latitude, colour = clusterbyanswer)) + geom_point()+ xlab("Longitude") + ylab("Latitude")
 
 ##According to the plot, stduents in the two answer groups evenly distribute across locations.
+
+```
+
+##Revised after code workout
+```{r}
+table(fit3$cluster, fit6$cluster)
+DR <- D %>% group_by(fit3$cluster, fit6$cluster) %>% summarize(count=n())
+names(DR)[1] <- "clusterbylocation"
+names(DR)[2] <- "clusterbyanswer"
+DR$clusterbylocation <- as.factor(DR$clusterbylocation)
+DR$clusterbyanswer <- as.factor(DR$clusterbyanswer)
+ggplot(DR, aes(x=clusterbylocation, y=clusterbyanswer, size=count)) + geom_point()
+
+##this shows how much overlap there are between the groups of clusters
+P1 <- structable(DR$clusterbylocation ~ DR$clusterbyanswer )
+mosaic(P1, shade=T,legend=T)
 
 ```
 
