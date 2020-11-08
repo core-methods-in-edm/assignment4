@@ -20,6 +20,8 @@ Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as 
 ```{r}
 
 K1 <- read.csv("Class_Motivation.csv", header = TRUE)
+K1b<- gather(K1,week, measure,2:6)
+plot(as.factor(K1b$week),K1b$measure)
 
 ```
 
@@ -80,6 +82,23 @@ fit <- kmeans(K3,2)
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
+fita<-kmeans(K3,2)
+fitb<-kmeans(K3,2)
+fitc<-kmeans(K3,2)
+
+fita$withinss
+fitb$withinss
+fitc$withinss
+
+
+fita$tot.withinss
+fitb$tot.withinss
+fitc$tot.withinss
+
+fita$betweenss
+fitb$betweenss
+fitc$betweenss
+
 
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
@@ -125,7 +144,6 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 K6$week<-as.numeric(K6$week)
 K6$cluster<-as.factor(K6$cluster)
 
-
 ```
 
 Now we can plot our line plot using the ggplot command, "ggplot()".
@@ -143,17 +161,24 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
-From the plot, we can see the average motivation fro the two clusters of students changed across weeks. Students in cluster 1 (red line) seems start with low motivation at the beginningm, and increase over weeks; while students in cluster 2 (green line) seems start with high motivations, but their motivations drops over weeks. At week five, the average motivation for students in cluster 1 is higher than the students in cluster 2. 
+# Answers:
+  From the plot, we can see the average motivation fro the two clusters of students changed across weeks. Students in cluster 1 (red line) seems start with low motivation at the beginning, and increase over weeks; while students in cluster 2 (green line) seems start with high motivations, but their motivations drops over weeks. At week five, the average motivation for students in cluster 1 is higher than the students in cluster 2. 
+
+  One way to explain this pattern could be if the students started the class with high motivation, the students might perform better in the midterm exam, and once their test scores are high, they might feel like they don't need to spend as much time on the class materials; on the other hand, if students started with low motivation, their test scores might be bad during midterm, so they spend more time in the second half of the semester to catch up.
+
+
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
 ```{r}
 K7 <- count(K4, cluster)
+K7
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
 
-By comparing the two plots, I think the plot with 2 clusters is more informative, since the patterns in the plot with 3 clusters are not as obvious. The patter of cluster 1 in the 3-cluster plot seems similar to the cluster 2 in the 2-cluster plot, but with less obvious drop towards the end of the weeks. And the patter of cluster 3 in the 3-cluster plot seems similar to the cluster 1 in the 2-cluster plot, but with less obvious increase towards the end of the weeks. The 2-cluster plot shows the pattern between time and motivation better.
+# Answers:
+By comparing the two plots, I think the plot with 2 clusters is more informative, on the one hand, since the graph with 2 clusters match better with the explanation I presented above. In addition, the patterns in the plot with 3 clusters are not as obvious, and it doesn't seem like easy to explain with any theory. By observing the patterns, the patter of cluster 1 in the 3-cluster plot seems similar to the cluster 2 in the 2-cluster plot, but with less obvious drop of motivation towards the end of the weeks. And the patter of cluster 3 in the 3-cluster plot seems similar to the cluster 1 in the 2-cluster plot, but with less obvious increase towards the end of the weeks. Plot with 3 clusters doesn't add much useful information in this case.
 
 ```{r}
 fit_1<-kmeans(K3,3)
@@ -164,10 +189,13 @@ K6_1 <- K5_1 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 K6_1$week<-as.numeric(K6_1$week)
 K6_1$cluster<-as.factor(K6_1$cluster)
 ggplot(K6_1, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+
+
 ```
 
 
 ##Part II
+
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 
@@ -175,7 +203,7 @@ Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) 
 #Location cluster
 D1 <- read.csv("HUDK405020-cluster.csv", header = TRUE)
 DL1<-D1 [,2:3]
-DL1 <- scale(DL1, center = TRUE, scale = TRUE)
+#DL1 <- scale(DL1, center = TRUE, scale = TRUE)
 DL2<-data.frame(DL1)
 fit_L <- kmeans(DL2,2)
 DL3 <-data.frame(DL2,fit_L$cluster)
@@ -186,27 +214,73 @@ plot(DL3$long, DL3$lat, col=DL3$cluster)
 ggplot(DL3, aes(x=long, y=lat, colour=cluster)) +
   geom_point(size=2, shape=1) +xlab("long") + ylab("long")
 
+
 ```
+# Answers:
 Based on the plot above, it seems like the students are mainly cluster in US and China, we can kind of see the world map in the plot.
 
+
 ```{r}
-# question cluster
-DQ1 <-D1 [,4:9]
-DQ1 <- scale(DQ1, center = TRUE, scale = TRUE)
-DQ1<-data.frame(DQ1)
-fit_Q<-kmeans(DQ1,2)
-DQ2 <-data.frame(DQ1,fit_Q$cluster)
-names(DQ2)<-c("compare features","math accuracy","planner use","enjoy discuss","enjoy group","meet deadline","cluster")
-DQ3 <- gather(DQ2, "question", "score", 1:6)
-DQ4 <- DQ3 %>% group_by(question, cluster) %>% summarise(avg = mean(score))
-DQ3$cluster<-as.factor(DQ3$cluster)
-DQ4$cluster<-as.factor(DQ4$cluster)
-DQ4$question<-as.factor(DQ4$question)
-DQ4$score<-as.numeric(DQ4$avg)
+D2<-select(D1,4:9)
+fit2a<-kmeans(D2,1)
+fit2b<-kmeans(D2,2)
+fit2c<-kmeans(D2,3)
+fit2d<-kmeans(D2,4)
+fit2e<-kmeans(D2,5)
+fit2f<-kmeans(D2,6)
+fit2g<-kmeans(D2,7)
 
-ggplot(DQ3, aes(x=question, y=score, colour = cluster)) + geom_boxplot() + xlab("Question") + ylab("Score")
+mss<-c(
+fit2a$tot.withinss,
+fit2b$tot.withinss,
+fit2c$tot.withinss,
+fit2d$tot.withinss,
+fit2e$tot.withinss,
+fit2f$tot.withinss,
+fit2g$tot.withinss,
+fit2a$betweenss,
+fit2b$betweenss,
+fit2c$betweenss,
+fit2d$betweenss,
+fit2e$betweenss,
+fit2f$betweenss,
+fit2g$betweenss
+)
 
-ggplot(DQ4, aes(x=question, y=avg, colour = cluster)) + geom_point() + ylim(-1,1)+xlab("Question") + ylab("Average Score")
+clusters<-c(seq(1,7,1),seq(1,7,1))
+color2<-c(rep("blue",7),rep("red",7))
+plot(clusters, mss,col=color2)   
+
+```
+
+look for the sharp decrease of SS within, and choose the number of cluster there, however, usually it might be smooth as this one here, so always should based on the theory 
+
+
+```{r}
+#combine things togather
+DL<-data.frame(D1$compare.features,D1$math.accuracy,D1$planner.use,D1$enjoy.discuss,D1$enjoy.group,D1$meet.deadline,fit_L$cluster,fit2c$cluster,DL3$lat,DL3$long,DL3$cluster)
+
+pairs(DL)
+```
+
+```{r}
+#first try to solve the "answers" cluster
+#DQ1 <-D1 [,4:9]
+#DQ1 <- scale(DQ1, center = TRUE, scale = TRUE)
+#DQ1<-data.frame(DQ1)
+#fit_Q<-kmeans(DQ1,2)
+#DQ2 <-data.frame(DQ1,fit_Q$cluster)
+#names(DQ2)<-c("compare features","math accuracy","planner use","enjoy discuss","enjoy group","meet deadline","cluster")
+#DQ3 <- gather(DQ2, "question", "score", 1:6)
+#DQ4 <- DQ3 %>% group_by(question, cluster) %>% summarise(avg = mean(score))
+#DQ3$cluster<-as.factor(DQ3$cluster)
+#DQ4$cluster<-as.factor(DQ4$cluster)
+#DQ4$question<-as.factor(DQ4$question)
+#DQ4$score<-as.numeric(DQ4$avg)
+
+#ggplot(DQ3, aes(x=question, y=score, colour = cluster)) + geom_boxplot() + xlab("Question") + ylab("Score")
+
+#ggplot(DQ4, aes(x=question, y=avg, colour = cluster)) + geom_point() + ylim(-1,1)+xlab("Question") + ylab("Average Score")
 
 ```
 
@@ -215,13 +289,30 @@ ggplot(DQ4, aes(x=question, y=avg, colour = cluster)) + geom_point() + ylim(-1,1
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
+table(DL$fit2c.cluster,DL$fit_L.cluster)
+
+DL2<-DL%>%group_by(fit2c.cluster,fit_L.cluster)%>%summarize(count=n())
+#DL2$fit_L.cluster <- ifelse(DL2$fit_L.cluster ==1,"A","B")
+ggplot(DL2,aes(x=fit2c.cluster,y=fit_L.cluster,size=count))+geom_point()
+#ggplot(DL2,aes(x=fit2c.cluster,y=fit_L.cluster,size=count))+geom_bar(stat="identity",position="fill",colour="black")
+
+#install.packages("vcd")
+library(vcd)
+P1<-structable(fit2c$cluster~fit_L$cluster)
+mosaic(P1,shade=TRUE,legend=TRUE)
+
+
+#first try:
 #DF1 <- data.frame(D1,DL3$cluster, DQ3$cluster)
 #DF2 <- DF3 %>% group_by(question, cluster) %>% summarise(avg = count(score))
 #table (DF1$DL3.cluter,DF1$DQ3.cluater)
 # barplot(DF1$DL3.cluter,DF1$DQ3.cluater)
 
+
 ```
 
+# Answers:
+Based on the table and the graphs above, it seems like the location and answers cluster do overlap quite a lot. This results might be due to the cultural differences of the regions. Students from the western culture might be more comfortable with discussion and gorup work, and students from the eastern culture might be more comfortable with math. The implication of the results is that the instructor probably should mixed up students from different region in group work such as hackthon, so they can help each other and complement for each other.
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
 
