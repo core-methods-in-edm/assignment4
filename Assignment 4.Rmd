@@ -264,8 +264,8 @@ pairs(DL)
 ```
 
 ```{r}
-#first try to solve the "answers" cluster
-#DQ1 <-D1 [,4:9]
+#first try to solve the "answers" cluster 
+#DQ1 <-D1 [,4:9] 
 #DQ1 <- scale(DQ1, center = TRUE, scale = TRUE)
 #DQ1<-data.frame(DQ1)
 #fit_Q<-kmeans(DQ1,2)
