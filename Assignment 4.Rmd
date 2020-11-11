@@ -8,13 +8,18 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv", header = TRUE)
+K1b <- gather(K1, week, measure, 2:6)
+plot(as.factor(K1b$week), K1b$measure)
 
 ```
 
@@ -26,7 +31,7 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- select(K1, 2:6)
 
 ```
 
@@ -40,6 +45,8 @@ We will remove people with missing values for this assignment, but keep in mind 
 ```{r}
 
 K3 <- na.omit(K2) #This command create a data frame with only those people with no missing values. It "omits" all rows with missing values, also known as a "listwise deletion". EG - It runs down the list deleting rows as it goes.
+K3 <- K2
+K3[is.na(K3)] <- 0
 
 ```
 
@@ -47,7 +54,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3) #Go to whiteboard
 
 ```
 
@@ -65,21 +72,32 @@ Notice that in this case we have 5 variables and in class we only had 2. It is i
 Also, we need to choose the number of clusters we think are in the data. We will start with 2.
 
 ```{r}
-
-fit <- 
-
+fit1a <- kmeans(K3, 2)
+fit1b <- kmeans(K3, 2)
+fit1c <- kmeans(K3, 2) 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
-
+fit1b$cluster
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3, fit1a$cluster, fit1b$cluster, fit1c$cluster)
+fit1a$withinss
+fit1b$withinss
+fit1c$withinss
+fit1a$tot.withinss
+fit1b$tot.withinss
+fit1c$tot.withinss
+fit1a$betweenss
+fit1b$betweenss
+fit1c$betweenss
+K4 <- data.frame(K3, fit1a$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
 
+names(K4) <- c("1", "2", "3", "4", "5", "cluster") 
 
 ```
 
@@ -95,8 +113,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
-
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 ```
 
 Now it's time to do some visualization: 
@@ -113,9 +130,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
+K6$cluster <- as.factor(K6$cluster)
 
-K6$cluster <- 
 
 ```
 
@@ -148,13 +165,93 @@ Look at the number of people in each cluster, now repeat this process for 3 rath
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 
+```{r}
+
+library(tidyverse)
+M1 <- read.csv("HUDK405020-cluster.csv", header = TRUE)
+#Create a dataframe that only includes the surevy questions about hours
+M2 <- select(M1,4:9)
+
+fit2a <- kmeans(M2, 1)
+fit2b <- kmeans(M2, 2)
+fit2c <- kmeans(M2, 3)
+fit2d <- kmeans(M2, 4)
+fit2e <- kmeans(M2, 5)
+fit2f <- kmeans(M2, 6)
+fit2g <- kmeans(M2, 7)
+
+mss<- c(fit2a$tot.withinss,fit2b$tot.withinss,fit2c$tot.withinss,fit2d$tot.withinss,fit2e$tot.withinss,fit2f$tot.withinss,fit2g$tot.withinss, fit2a$betweenss,fit2b$betweenss,fit2c$betweenss,fit2d$betweenss,fit2e$betweenss,fit2f$betweenss,fit2g$betweenss)
+
+clusters <- c(seq(1,7,1),seq(1,7,1))
+col <- c(rep("blue",7), rep("red",7))
+plot(clusters, mss, col = col)
+#Create a dataframe that only includes location data
+L1 <- select(M1, 2:3)
+#L1 <- unite(L1, place, Q1_1, Q1_2, sep = ",")
+#Request lattitude and longitude from Google Maps API
+#library(ggmap)
+#L2 <- geocode(as.character(L1$place), output = "latlon", source = "dsk")
+#Generate clusters for lat/lon
+plot(L1$long, L1$lat)
+fit3a <- kmeans(L1, 2)
+fit3b <- kmeans(L1, 2)
+fit3c <- kmeans(L1, 2)
+fit3a$tot.withinss
+fit3b$tot.withinss
+fit3c$tot.withinss
+#Combine everything together
+ML <- data.frame(M1$compare.features, M1$math.accuracy,M1$planner.use,M1$enjoy.discuss,M1$enjoy.group,M1$meet.deadline, fit2c$cluster, M1$lat,M1$long, fit3a$cluster)
+pairs(ML)
+```
+
+
+
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
 
+DF <- data.frame(table(ML$fit2c.cluster,ML$fit3a.cluster))
+
+ML2 <- ML %>% group_by(fit2c.cluster,fit3a.cluster) %>% summarize(count = n())
+
+ggplot(ML2, aes(x = fit2c.cluster, y = fit3a.cluster, size = count)) + geom_point()
+
+library(vcd)     
+
+P1 <- structable(fit2c$cluster ~ fit3a$cluster)
+mosaic(P1, shade=TRUE, legend=TRUE) 
+
 ```
+
+D1$compare.features <- ifelse(D1$compare.features == "100% of the time", 100,
+                       ifelse(D1$compare.features == "75% of the time", 75,
+                       ifelse(D1$compare.features == "50% of the time", 50,
+                       ifelse(D1$compare.features == "25% of the time", 25,0))))
+
+D1$math.accuracy <- ifelse(D1$math.accuracy == "100% of the time", 100,
+                       ifelse(D1$math.accuracy == "75% of the time", 75,
+                       ifelse(D1$math.accuracy == "50% of the time", 50,
+                       ifelse(D1$math.accuracy == "25% of the time", 25,0))))
+D1$planner.use <- ifelse(D1$planner.use == "100% of the time", 100,
+                       ifelse(D1$planner.use == "75% of the time", 75,
+                       ifelse(D1$planner.use == "50% of the time", 50,
+                       ifelse(D1$planner.use == "25% of the time", 25,0))))
+D1$enjoy.discuss <- ifelse(D1$enjoy.discuss == "Yes, all the time", 100,
+                       ifelse(D1$enjoy.discuss == "Most of the time", 75,
+                       ifelse(D1$enjoy.discuss == "About half the time", 50,
+                       ifelse(D1$enjoy.discuss == "Rarely", 25,0))))
+D1$enjoy.group <- ifelse(D1$enjoy.group == "Yes, all the time", 100,
+                       ifelse(D1$enjoy.group == "Most of the time", 75,
+                       ifelse(D1$enjoy.group == "About half the time", 50,
+                       ifelse(D1$enjoy.group == "Rarely", 25,0))))
+
+D1$meet.deadline <- ifelse(D1$meet.deadline == "Yes, all the time", 100,
+                       ifelse(D1$meet.deadline == "Most of the time", 75,
+                       ifelse(D1$meet.deadline == "About half the time", 50,
+                       ifelse(D1$meet.deadline == "Rarely", 25,0))))
+
 
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
