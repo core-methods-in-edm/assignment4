@@ -1,5 +1,8 @@
 ---
-title: "Assignment 4: K Means Clustering"
+title: "Assignment 4"
+author: "Yuting Zhou"
+date: "11/04/2020"
+output: html_document
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
