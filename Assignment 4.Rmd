@@ -1,5 +1,7 @@
 ---
 title: "Assignment 4: K Means Clustering"
+author: "Berj Akian"
+date: "11/1/2020"
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -8,13 +10,30 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(tidyverse)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+#read in the data
+K1 <- read.csv("Class_Motivation.csv")
+
+#check out the data
+class(K1)
+dim(K1)
+colnames(K1)
+rownames(K1)
+head(K1)
+summary(K1)
+
+#finding duplicate id's and adding up the number of dups... BAM!
+K1idtest <- count(group_by(K1,id)) 
+K1idtest
+#show just the ids that are dupped
+K1idtest <- subset(K1idtest,n!=1)
+K1idtest
+
 
 ```
 
@@ -26,11 +45,41 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+#super sloppy way of dealing with the duplicate id's... i left them in the dataset but added a unique suffix to all id's (i would have preferred to add suffixes to only the dup id's, e.g. 01, 02, 03..., but i dont know how to elegantly do that)
+K1b <- K1
+K1b$id2 <- sample(1:38,  replace=FALSE)
+K1c <- K1b %>% unite(newid, id, id2, sep = "-")
+
+
+#create a new copy of the data.frame with the id column as the rowname
+K2 <- K1c[,-1]
+rownames(K2) <- K1c[,1]
+
+
+#count rows that have NA... found this https://sebastiansauer.github.io/sum-isna/
+#still deciding which i like best... would have 
+K2.is.na1 <- sapply(K2, function(x) sum(is.na(x)))
+K2.is.na1
+
+K2.is.na2 <- map(K2, ~sum(is.na(.)))
+K2.is.na2
+
+
+K2.is.na3 <- K2 %>%
+  summarise_all(funs(sum(is.na(.)))) 
+K2.is.na3
+
+K2.is.na4 <- apply(K2, MARGIN = 1, function(x) sum(is.na(x)))
+K2.is.na4
+
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
+
+#i would have preferred to  ask the person who gave me the data to help understand the reason for the dup id's and maybe try to identify which was the most recent if i was to delete them... for now, i sloppily left them in the dataframe and just appended a suffix to each of them so they are unique. also, i would have preferred to understand the na's... i simply ended up deleting any row in the data that had an na. resulted in deleting 15 rows. 
+
+
 
 
 
@@ -38,16 +87,17 @@ We will remove people with missing values for this assignment, but keep in mind 
 
 
 ```{r}
-
 K3 <- na.omit(K2) #This command create a data frame with only those people with no missing values. It "omits" all rows with missing values, also known as a "listwise deletion". EG - It runs down the list deleting rows as it goes.
+
 
 ```
 
 Another pre-processing step used in K-means is to standardize the values so that they have the same range. We do this because we want to treat each week as equally important - if we do not standardise then the week with the largest range will have the greatest impact on which clusters are formed. We standardise the values by using the "scale()" command.
 
 ```{r}
+#scale the data
 
-K3 <- 
+K3.scale <- scale(K3)
 
 ```
 
@@ -66,19 +116,20 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+Kfit <- kmeans(K3.scale,centers = 2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
 #We can access the list of clusters by typing "fit$cluster", the top row corresponds to the original order the rows were in. Notice we have deleted some rows.
 
-
+Kfit$cluster
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3,Kfit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
+names(K4) <- c('1','2','3','4','5','cluster')
 
 
 ```
@@ -95,7 +146,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,9 +164,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -128,11 +179,16 @@ Now we can plot our line plot using the ggplot command, "ggplot()".
 
 ```{r}
 
-ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+ggplot(K6, aes(x = week, y = avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
 
 ```
 
 What patterns do you see in the plot?
+
+## I see the following patterns in the top and bottom lines (i reference them 'top' and 'bottom' because each time i run kmeans it randomly assigns them labels '1' and '2')...  
+#1. Both cluster groups eventually trend upwards, the bottom line after week 3, the top line after week 4 (when i ran kmeans several times, i noticed the upward pitch in latter weeks varied in it's upward slope)
+#2. The bottom line cluster had more variance in their motivation from week to week as compared to top one (again this changed each time i ran kmeans)
+#Note: Remember that these interpretations are skewed because the original dataset contained multiple observations where the id was the same and these observations were not removed... also, 8 rows of data that had missing motivation survey values were removed.
 
 
 
@@ -140,19 +196,263 @@ It would be useful to determine how many people are in each cluster. We can do t
 
 ```{r}
 K7 <- count(K4, cluster)
+K7
 ```
+##Noteworthy... In a two cluster grouping... cluster 1 has almost twice the population of cluster 2
+
+
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+
+```{r}
+#and then there were 3 clusters...
+Kfit <- kmeans(K3.scale,centers = 3)
+str(Kfit$cluster)
+
+K4 <- data.frame(K3,Kfit$cluster)
+
+names(K4) <- c('1','2','3','4','5','cluster')
+
+K5 <- gather(K4, "week", "motivation", 1:5)
+
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+
+K6$week <- as.numeric(K6$week)
+
+K6$cluster <- as.factor(K6$cluster)
+
+K7 <- count(K4, cluster)
+K7
+
+ggplot(K6, aes(x = week, y = avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation") 
+
+```
+
+#  I feel 3 clusters is better... the populations are more balanced in this three cluster grouping with 7 to 9 observations each. Also, it's clear that cluster 1 had essentially no change in motivation... i'm glad to identify them separately. 
+#Note: Remember that these interpretations are skewed because the original dataset contained multiple observations where the id was the same and these observations were not removed... also, 8 rows of data that had missing motivation survey values were removed.
+
+
+
+```{r}
+#hmmmm.... why not...
+maxclusters <- unique(K3.scale) %>% nrow
+halfthemaxclusters <- maxclusters/2
+
+Kfit <- kmeans(K3.scale,centers = halfthemaxclusters)
+str(Kfit$cluster)
+
+Kfit$cluster
+
+K4 <- data.frame(K3,Kfit$cluster)
+
+names(K4) <- c('1','2','3','4','5','cluster')
+
+K5 <- gather(K4, "week", "motivation", 1:5)
+
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+
+K6$week <- as.numeric(K6$week)
+
+K6$cluster <- as.factor(K6$cluster)
+
+K7 <- count(K4, cluster)
+K7
+
+ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation") 
+
+```
+
+## Is MaxClusters/2 clusters better?
+#  I found this to be helpful in identifying clusters where there was no change... if i were better at r, i would have put some interactivity in this graph to filter out certain clusters, e.g. the ones with no change... and what's with the cluster of survey respondents that voted '1' every week, how unhappy are they?!?. 
+#Note: Remember that these interpretations are skewed because the original dataset contained multiple observations where the id was the same and these observations were not removed... also, 8 rows of data that had missing motivation survey values were removed.
+
+
+
+
 
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
+
+```{r}
+
+#load 
+HD1 <- read.csv("HUDK405020-cluster.csv")
+
+#check out the data
+class(HD1)
+dim(HD1)
+colnames(HD1)	
+rownames(HD1)	
+head(HD1)
+summary(HD1)
+
+
+#look for duplicate id's
+HD1idtest <- count(group_by(HD1,id)) 
+HD1idtest <- subset(HD1idtest,n!=1)
+HD1dupids <- sum(HD1idtest$n) - nrow(HD1idtest)
+HD1dupids
+#yay, none found
+
+
+#move id column to rowname
+HD2 <- HD1
+rownames(HD2) <- HD1[,1]
+HD2 <- HD1[,2:9]
+nrow(HD2)
+
+#look for na's
+HD2.is.na <- HD1 %>%
+  summarise_all(funs(sum(is.na(.)))) 
+HD2.is.na
+#yay, none found
+
+#remove rows with na's
+#HD3 <- na.omit(HD2)
+#nrow(HD3)
+HD3 <- HD2
+
+#create table of lat/lon
+HD3LatLon <-HD3[,1:2]
+HD3LatLon <- as.matrix(HD3LatLon)
+class(HD3LatLon)
+
+#create table of survey answers
+HD3Survey <-HD3[,3:8]
+HD3Survey <- as.matrix(HD3Survey)
+class(HD3Survey)
+
+#scaling: this is not appropriate on lat/lon data (i think?)
+#scale(HD3LatLon)
+
+#scaling: in looking at the summary of survey, scaling does not seem necessary as all the data is within the same scale already... 0-100
+summary(HD3Survey)
+#scale(HD3Survey)
+
+
+
+
+
+```
+
+
+```{r}
+
+##HD3LatLon...explore how many clusters are needed using elbow plot 
+
+#first determine how many unique row values in the data... this is max number of k's
+unique(HD3LatLon)
+#42
+
+# Use map_dbl to run many models with varying value of k (centers)
+tot_withinss <- map_dbl(1:42,  function(k){
+  model <- kmeans(x = HD3LatLon, centers = k)
+  model$tot.withinss
+})
+
+# Generate a data frame containing both k and tot_withinss
+elbow_df <- data.frame(
+  k = 1:42,
+  tot_withinss = tot_withinss
+)
+
+# Plot the elbow plot
+ggplot(elbow_df, aes(x = k, y = tot_withinss)) +
+  geom_line() +
+  scale_x_continuous(breaks = 1:42)
+
+#the elbow graph shows 2 distinct clusters for k... i'll use 2 clusters for LatLon table
+
+#occurs to me after watching the workout video again, i could have skipped the elbow plot and just done a pairs plot and visually observe that 2 clusters would be fine 
+pairs(HD3LatLon)
+
+```
+```{r}
+
+
+##HD3Survey...explore how many clusters are needed using elbow plot  
+
+#first determine how many unique row values in the data... this is max number of k's
+unique(HD3Survey)
+#73
+
+# Use map_dbl to run many models with varying value of k (centers)
+tot_withinss <- map_dbl(1:20,  function(k){
+  model <- kmeans(x = HD3Survey, centers = k)
+  model$tot.withinss
+})
+
+# Generate a data frame containing both k and tot_withinss
+elbow_df <- data.frame(
+  k = 1:20,
+  tot_withinss = tot_withinss
+)
+
+# Plot the elbow plot
+ggplot(elbow_df, aes(x = k, y = tot_withinss)) +
+  geom_line() +
+  scale_x_continuous(breaks = 1:20)
+
+#yuk, at 73 k's, the elbow graph shows no distinct clusters for k
+
+#i reran at 20 k's a bunch of times, the elbow graph shows a  turn at 5 distinct clusters for k... i'll use 5 clusters for Survey table
+
+
+#occurs to me after watching the workout video again, i could done a pairs plot and visually observe the data... likely because there are 5 potential values in the data... the pairs visual leans towards 5 clusters  
+pairs(HD3Survey)
+
+```
+
+
+```{r}
+
+#kmeans clusters for both LatLon and Survey matrixes
+HD3LatLonFit <- kmeans(HD3LatLon,centers = 2)
+HD3LatLonFit$cluster
+
+HD3SurveyFit <- kmeans(HD3Survey,centers = 5)
+HD3SurveyFit$cluster
+
+#add the cluster information back to the original table
+HD4 <-mutate(HD3, LatLonCluster = HD3LatLonFit$cluster, SurveyCluster = HD3SurveyFit$cluster)
+
+
+```
+
 
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
+
+pairs(HD4)
+
+#table view... got this from the workout, thank you!... i like it... interesting how that cluster 3 is an outlier... i might go back and do just 4 survey clusters
+table(HD3LatLonFit$cluster,HD3SurveyFit$cluster)
+
+
+#scatter plot... got this from the workout, thank you again!...
+HD5 <- HD4 %>% group_by(LatLonCluster, SurveyCluster) %>% summarize(count = n())
+ggplot(HD5, aes(x = LatLonCluster, y = SurveyCluster, size = count)) + geom_point()
+
+
+
+```
+
+
+
+```{r}
+#installing vcd... got this from the workout, yay workouts!...
+library(vcd)
+
+HD6 <- structable(HD3LatLonFit$cluster~HD3SurveyFit$cluster)
+mosaic(HD6, shade = TRUE, legend = TRUE)
+#that's cool!
+#that cluster 3 has got to go!
+
 
 ```
 
