@@ -1,5 +1,8 @@
 ---
-title: "Assignment 4: K Means Clustering"
+title: 'Assignment 4: K Means Clustering'
+author: Sara Vasquez
+output: html_document
+df_print: paged
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -7,14 +10,16 @@ In this assignment we will be applying the K-means clustering algorithm we looke
 https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
-```{r}
-library()
+```{r setup}
+library(tidyverse)
+library(STAT)
+
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv")
 
 ```
 
@@ -26,12 +31,13 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <-K1 %>%  select(-id)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
+Removing all students will prevent us form getting a full picture. SOme students had answers for some weeks. If I had a choice I would have removed students that had 1 or less responses and change NAs to 1 since you could make the argument that if they were answeriing for otehr weeks, maybe the fact that they did not respond indicated that they had low motivation.
 
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
@@ -47,7 +53,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3, center = TRUE, scale = TRUE)
 
 ```
 
@@ -66,7 +72,7 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+fit <- kmeans(K3,2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
@@ -76,10 +82,10 @@ fit <-
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3,fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
-
+names(K4) <- c("1","2","3","4","5","cluster")
 
 ```
 
@@ -95,7 +101,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,9 +119,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -134,7 +140,7 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
-
+As the motivation of cluster 1 increased, the motivation of cluster 2 decreased and vice-versa. The Cluster were mirror opposite of each other.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
@@ -143,19 +149,172 @@ K7 <- count(K4, cluster)
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+I think 3 clusters show a better picture of the motivation in the class as it gives us visibility into that first cluster and we can see that the decrease in the first cluster started in week 3 but was skewed by some students in the middle cluster. We can also see that there is a middle cluster that had did not follow the pattern of the other two clusters and experienced an increase in motivation starting in week 3.
+
+```{r}
+KB1 <- K1
+KB2 <-KB1 %>%  select(-id)
+KB3 <- na.omit(KB2)
+KB3 <- scale(KB3, center = TRUE, scale = TRUE)
+fit <- kmeans(KB3,3)
+KB4 <- data.frame(KB3,fit$cluster)
+names(KB4) <- c("1","2","3","4","5","cluster")
+KB5 <- gather(KB4, "week", "motivation", 1:5)
+KB6 <- KB5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation), .groups='drop')
+KB6$week <- as.numeric(KB6$week)
+KB6$cluster <- as.factor(KB6$cluster)
+KB7 <- count(KB4, cluster)
+ggplot(KB6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+```
+
+
 
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
 
-##Part III
-
-Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
+Read the file, clean up, and structure
 
 ```{r}
+library(janitor)
+ES <-read.csv("HUDK405020-cluster.csv", header = TRUE)
+#make a tibble, clean names, and remove empty rows and columns
+ES1 <- as_tibble(ES) %>% clean_names() %>% remove_empty()
+#finding duplicates
+Dupes <- ES1 %>% get_dupes()
+#No duplicates
+#Changing id to character so it is not treated as an integer
+ES1$id <- as.character(ES1$id)
 
 ```
 
+Creating two tables. One for long/lat and one for questions
 
-## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
+```{r}
+#location table
+ESL <- ES1 %>% select(2:3) 
+#question table
+ESQ <- ES1 %>% select(4:9)
+
+
+```
+
+##K Means clustering - Location table
+Exploratory Clustering 
+I am going to use the broom package, and experiment with a method I found on the Tidyverse page to create multiple models to decide the number of clusters I should be using. In addition, I know from the week 2 video (2.2) "Visual Analysis of the Student Survey" there is the possibility of 3+ clusters (2 in the USA + China + others).
+
+```{r}
+library(broom)
+#Nesting the K-means Clustering
+kclust <- 
+  tibble(k = 1:5) %>% 
+  mutate(
+    kclust = map(k, ~kmeans(ESL, .x)),
+    tidied = map(kclust, tidy),
+    glanced = map(kclust, glance),
+    augmented = map(kclust, augment, ESL)
+  )
+#creating 3 data sets to create exploratory visualization
+centers <- 
+  kclust %>%
+  unnest(cols = c(tidied))
+
+clusters <- 
+  kclust %>% 
+  unnest(cols = c(augmented))
+
+scree <- 
+  kclust %>%
+  unnest(cols = c(glanced))
+
+```
+
+Exploratory visualization
+
+```{r}
+#scatter plot
+ggplot(clusters, aes(x = lat, y = long)) +
+  geom_point(aes(color = .cluster), alpha = .75) + 
+  facet_wrap(~ k)
+# based on my knowledge from the video it looks like I should be using 3 or 4 plots. I am going to make a scree plot just to experiment since that is the purpose of this class.
+ggplot(scree, aes(k, tot.withinss)) +
+  geom_line() +
+  geom_point()
+# it appears I should be using 2 clusters, but I am going to sue 4 based on my knowledge that there are two groups in the USA and a significant amount of students in China. THe scree plot helped me realized that 4 too any clusters.
+```
+
+Location K-mean clusters
+
+```{r}
+Loc <- kmeans(ESL, centers = 3)
+#augment to extract the cluster number info
+LocClust <- augment(Loc,ES1) %>% select(-4:-9) %>% rename(LocClust=.cluster)
+
+
+```
+
+##K Means clustering - Questions
+I am running a scree plot to practice
+
+```{r}
+KclustQ <- 
+  tibble(k = 1:5) %>% 
+  mutate(
+    kclust = map(k, ~kmeans(ESQ, .x)),
+    tidied = map(kclust, tidy),
+    glanced = map(kclust, glance),
+    augmented = map(kclust, augment, ESL)
+  )
+#Extract the data
+screeQ <- 
+  KclustQ %>%
+  unnest(cols = c(glanced))
+#Scree plot
+ggplot(screeQ , aes(k, tot.withinss)) +
+  geom_line() +
+  geom_point()
+#No clear drop off, but I am going to use 3 again as it appears the drop off is between 2-3,a nd people in education love to group people in 3-4 groups (e.g., low, medium, high).
+
+# Now that I have experimented, I think it would be interesting to use the within and other info that is available rather than do it by exploratory visuals
+```
+
+Question Clusters
+
+```{r}
+Ques <- kmeans(ESQ, centers = 3)
+#augment to extract the cluster number info
+QClust <- augment(Ques,ES1) %>% select(-2:-3) %>% rename(Qclust=.cluster)
+```
+
+##Part III
+
+Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
+It does not appear there is a pattern or relationship between geographic direction and answers to the student survey
+
+```{r}
+#combine the cluster tables
+
+clusters <- LocClust %>% full_join(QClust, by="id")
+clusters <- clusters %>% select(1,4,11)
+clusters <- clusters %>% rename(Location_Clusters=LocClust,Question_Clusters=Qclust)
+cluster_table <- clusters %>%  
+  tabyl(Location_Clusters,Question_Clusters) %>% 
+  adorn_percentages("row") %>% 
+  adorn_pct_formatting(rounding = "half up", digits = 0) %>%
+  adorn_ns() %>%
+  adorn_title("top",row_name = "Location Clusters", col_name = "Survey Question Clusters") %>%
+  knitr::kable() %>% print()
+
+#decided to experiment with this package, but since there is no relationship there was no points in changing the parameters
+library(vcd)
+P <- structable(clusters$Location_Clusters ~clusters$Question_Clusters) 
+
+mosaic(P,shade = T, legend=T)
+```
+
+
+
+
+
+
 
