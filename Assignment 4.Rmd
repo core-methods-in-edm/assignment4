@@ -37,6 +37,7 @@ K2 <-K1 %>%  select(-id)
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
+Removing all students will prevent us form getting a full picture. SOme students had answers for some weeks. If I had a choice I would have removed students that had 1 or less responses and change NAs to 1 since you could make the argument that if they were answeriing for otehr weeks, maybe the fact that they did not respond indicated that they had low motivation.
 
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
