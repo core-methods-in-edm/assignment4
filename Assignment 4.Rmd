@@ -1,5 +1,7 @@
 ---
 title: "Assignment 4: K Means Clustering"
+name: "Zhuoda Wu"
+Date: "2020/11/4"
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -8,13 +10,15 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 
 ```{r}
-library()
+library(tidyr)
+library(dplyr)
+library(ggplot2)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
+K1 <- read.csv("Class_Motivation.csv", header = TRUE)
 
 ```
 
@@ -26,13 +30,13 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- select(K1, 2:6)
 
 ```
 
 It is important to think about the meaning of missing values when clustering. We could treat them as having meaning or we could remove those people who have them. Neither option is ideal. What problems do you foresee if we recode or remove these values? Write your answers below:
 
-
+* If we recode these values, we run the risk of manipulating the values that do not represent these people's actual motivation level. For example, we might use the  average of their motivation level while they actually have increase or decrease during the five-week period, which confounds the final output and reduces our result's reliability. On the other hand, if we remove these values, we run the risk of excluding a subset of sample, which reduces our sample size and our result's validity.
 
 We will remove people with missing values for this assignment, but keep in mind the issues that you have identified.
 
@@ -47,7 +51,8 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3 <- scale(K3)
+K3 <- data.frame(K3)
 
 ```
 
@@ -66,7 +71,8 @@ Also, we need to choose the number of clusters we think are in the data. We will
 
 ```{r}
 
-fit <- 
+fit <- kmeans(K3, 2)
+
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
@@ -76,11 +82,10 @@ fit <-
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3, fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
-
-
+names(K4) <- c("1","2","3","4","5", "cluster")
 ```
 
 Now we need to visualize the clusters we have created. To do so we want to play with the structure of our data. What would be most useful would be if we could visualize average motivation by cluster, by week. To do this we will need to convert our data from wide to long format. Remember your old friends tidyr and dplyr!
@@ -95,7 +100,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -113,9 +118,9 @@ Likewise, since "cluster" is not numeric but rather a categorical label we want 
 
 ```{r}
 
-K6$week <- 
+K6$week <- as.numeric(K6$week)
 
-K6$cluster <- 
+K6$cluster <- as.factor(K6$cluster)
 
 ```
 
@@ -133,7 +138,9 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 ```
 
 What patterns do you see in the plot?
-
+* There are two different clusters present in this plot. 
+* Cluster 1 is above zero while cluster 2 is below zero in their average motivation level.
+* The two clusters show directly opposite trends to each other - While the cluster 1 average is increasing, the cluster 2 average is decreasing, and vice versa. 
 
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
@@ -143,16 +150,76 @@ K7 <- count(K4, cluster)
 ```
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
+```{r}
+fit2 <- kmeans(K3, 3)
+K4a <- data.frame(K3, fit2$cluster)
+names(K4a) <- c("1","2","3","4","5", "cluster")
+
+K5a <- gather(K4a, "week", "motivation", 1:5)
+
+K6a <- K5a %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+
+K6a$week <- as.numeric(K6a$week)
+K6a$cluster <- as.factor(K6a$cluster)
+
+ggplot(K6a, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+
+
+# The 2-cluster graph seems to be more informative because there are less intersections, which means the two clusters are more distinct from each other.
+
+```
+
 
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
+```{r}
+
+E1 <- read.csv("HUDK405020-cluster.csv")
+
+```
+
+Location Cluster
+```{r}
+
+E2 <- select(E1, 2, 3)
+E2 <- data.frame(scale(E2))
+
+fit3 <- kmeans (E2, 2)
+E3 <- data.frame(E2, fit3$cluster)
+names(E3) <- c("lat", "long", "location_cluster")
+
+E3$cluster <- as.factor(E3$location_cluster)
+
+ggplot(E3, aes(lat, long, colour = location_cluster)) + geom_line() + xlab("Lat") + ylab("Long")
+
+```
+
+Answers to Questions Cluster
+```{r}
+
+e1 <- select(E1, 4:9)
+e1 <- data.frame(scale(e1))
+
+fit4 <- kmeans (e1, 2)
+e2 <- data.frame(e1, fit4$cluster)
+
+colnames(e2)[7] <- "accuracy_cluster"
+e2$accuracy_cluster <- as.factor(e2$accuracy_cluster)
+
+ggplot(e2, aes(E1$id, math.accuracy, colour = accuracy_cluster)) + geom_line() + xlab("Student ID") + ylab("Math Accuracy")
+
+```
+
 
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
+
+ggplot(e2, aes(E1$id, math.accuracy, colour = accuracy_cluster, shape = as.factor(E3$location_cluster))) + geom_point() + xlab("Student ID") + ylab("Math Accuracy")
 
 ```
 
