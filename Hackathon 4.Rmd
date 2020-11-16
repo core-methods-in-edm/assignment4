@@ -1,0 +1,71 @@
+---
+title: "Hackathon"
+author: "Yen-Ling Cheng"
+date: "2020/11/14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+H1 <- read.csv("Hackathon 4 Data.csv", header = TRUE);
+library(ggplot2)
+
+ggplot(H1, aes(x=Prior.Expereicne, y=Engagement)) + 
+    geom_point()
+
+ggplot(H1, aes(x=Engagement, y=Enjoy)) + 
+    geom_point()
+
+ggplot(H1, aes(x=Prior.Expereicne, y=Enjoy)) + 
+    geom_point()
+```
+```{r}
+library(dplyr)
+library(tidyverse)
+
+H2 <- select(H1, 3:4)
+
+center_scale <- function(x) {
+    scale(x, scale = FALSE)
+}
+
+H2 <- data.frame(center_scale(H2))
+
+library(ggplot2) 
+
+H2 %>% 
+  ggplot(aes(Engagement, Enjoy)) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  geom_point() +
+  theme_minimal()+
+  geom_abline() + 
+  lims(x = c(-10,10), y = c(-10,10))
+ 
+
+```
+```{r}
+#calculate projected data points
+library(dplyr)
+library(tidyverse)
+
+x_p1 <- (8.6 + 1*-1.6 - 0)/ (1^2+1)
+x_p2 <- (2.6 + 1*-6.6 - 0)/ (1^2+1)
+x_p3 <- (-4.4 + 1*7.4 - 0)/ (1^2+1)
+x_p4 <- (0.6 + 1*9.4 - 0)/ (1^2+1)
+x_p5 <- (-7.4 + 1*-8.6 - 0)/ (1^2+1)
+
+#calculate sum of distances
+distance <- 2*((x_p1^2)+(x_p2^2)+(x_p3^2)+(x_p4^2)+(x_p5^2))
+
+```
+
