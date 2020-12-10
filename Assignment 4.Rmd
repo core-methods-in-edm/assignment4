@@ -1,5 +1,6 @@
 ---
 title: "Assignment 4: K Means Clustering"
+Author: Xing Yixie
 ---
 
 In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
@@ -159,7 +160,7 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 
 What patterns do you see in the plot?
 
-## Answer: People of Cluter 1 and Cluster 2 have different pattern through the week. Cluster2 people has stronger average motivation than Cluster1 people and the motivation of cluster 2 achieves highest in Week 1 and week 3. However, compared to cluster 2, cluster 1 people has lowest average motivation value in week 1 and 3.
+### Answer: People of Cluter 1 and Cluster 2 have different pattern through the week. Cluster2 people has stronger average motivation than Cluster1 people and the motivation of cluster 2 achieves highest in Week 1 and week 3. However, compared to cluster 2, cluster 1 people has lowest average motivation value in week 1 and 3.
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
 
@@ -171,6 +172,12 @@ Look at the number of people in each cluster, now repeat this process for 3 rath
 
 
 ```{r Part 1 cluster 3, message=FALSE, warning=FALSE}
+
+K3 <- na.omit(K2) 
+K3 <- K2
+
+K3[is.na(K3)] <- 0
+
 
 fit1a <- kmeans(K3, 3)
 fit1b <- kmeans(K3, 3)
@@ -209,10 +216,13 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 K7 <- count(K4, cluster)
 ```
 
-### In my opinion, clustering data into 2 clusters is more informative compared to 3 clusters. Because we can see the different pattern according to this graph obviously.
-##Part II
+### Answer: In my opinion, clustering data into 2 clusters is more informative compared to 3 clusters. Because we can see the different pattern according to this graph obviously. 
+
+
+## Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
 ```{r}
 p2 <- read.csv("HUDK405020-cluster.csv")
 L1 <- p2[,c(2,3)]
@@ -269,9 +279,9 @@ tableone::CreateCatTable("cluster","clusterLoc",data = D1)
 library(vcd)
 P1 <- structable(D1$cluster ~ D1$clusterLoc)
 mosaic(P1, shade=TRUE, legend=TRUE) 
-
 ```
 
+### Answer: We didn't observe any geographical patterns that correspond to the answers. For Chi-square test (independence test), there is no significant relationships between geographical pattern and students' answers. Moreover, we can testify this conclusion from picture as belows.
 
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
