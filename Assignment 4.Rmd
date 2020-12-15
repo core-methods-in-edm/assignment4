@@ -9,13 +9,13 @@ https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
 ```{r}
 library()
+library(tidyverse)
 ```
 
 Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 
-K1 <- read.csv(...)
-
+K1 <- read.csv("Class_Motivation.csv")
 ```
 
 This file contains the self-reported motivation scores for a class over five weeks. We are going to look for patterns in motivation over this time and sort people into clusters based on those patterns.
@@ -26,7 +26,7 @@ The algorithm will treat each row as a value belonging to a person, so we need t
 
 ```{r}
 
-K2 <- 
+K2 <- K1 %>% select(-id)
 
 ```
 
@@ -39,7 +39,7 @@ We will remove people with missing values for this assignment, but keep in mind 
 
 ```{r}
 
-K3 <- na.omit(K2) #This command create a data frame with only those people with no missing values. It "omits" all rows with missing values, also known as a "listwise deletion". EG - It runs down the list deleting rows as it goes.
+K3 <- na.omit(K2)
 
 ```
 
@@ -47,7 +47,7 @@ Another pre-processing step used in K-means is to standardize the values so that
 
 ```{r}
 
-K3 <- 
+K3b <- K3 %>% scale
 
 ```
 
@@ -64,9 +64,8 @@ Notice that in this case we have 5 variables and in class we only had 2. It is i
 
 Also, we need to choose the number of clusters we think are in the data. We will start with 2.
 
-```{r}
-
-fit <- 
+```{r, cache = T}
+fit <- kmeans(K3b, centers = 2)
 
 #We have created an object called "fit" that contains all the details of our clustering including which observations belong to each cluster.
 
@@ -76,10 +75,10 @@ fit <-
 
 #We can also attach these clusters to the original dataframe by using the "data.frame" command to create a new data frame called K4.
 
-K4
+K4 <- data.frame(K3,fit$cluster)
 
 #Have a look at the K4 dataframe. Lets change the names of the variables to make it more convenient with the names() command.
-
+names(K4) <- c("1","2","3","4","5","cluster") 
 
 ```
 
@@ -88,6 +87,7 @@ Now we need to visualize the clusters we have created. To do so we want to play 
 First lets use tidyr to convert from wide to long format.
 ```{r}
 
+
 K5 <- gather(K4, "week", "motivation", 1:5)
 ```
 
@@ -95,7 +95,7 @@ Now lets use dplyr to average our motivation values by week and by cluster.
 
 ```{r}
 
-K6 <- K5 %>% group_by(week, cluster) %>% summarise(K6, avg = mean(motivation))
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
 
 ```
 
@@ -112,10 +112,8 @@ We are going to create a line plot similar to the one created in this paper abou
 Likewise, since "cluster" is not numeric but rather a categorical label we want to convert it from an "integer" format to a "factor" format so that ggplot does not treat it as a number. We can do this with the as.factor() command.
 
 ```{r}
-
-K6$week <- 
-
-K6$cluster <- 
+K6$week <- K6$week %>% as.numeric
+K6$cluster <- K6$cluster %>% as.factor
 
 ```
 
@@ -133,7 +131,8 @@ ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab
 ```
 
 What patterns do you see in the plot?
-
+##Answer 1
+Cluster 2 shows greater motivation for all weeks.  There is a general increase in motivation closer to the last week which could imply that students tend to get more motivated towards the course closer to the course ending week.
 
 
 It would be useful to determine how many people are in each cluster. We can do this easily with dplyr.
@@ -144,18 +143,64 @@ K7 <- count(K4, cluster)
 
 Look at the number of people in each cluster, now repeat this process for 3 rather than 2 clusters. Which cluster grouping do you think is more informative? Write your answer below:
 
+```{r, cache = T}
+
+fit <- kmeans(K3b, centers = 3)
+K4 <- data.frame(K3,fit$cluster)
+names(K4) <- c("1","2","3","4","5","cluster") 
+K5 <- gather(K4, "week", "motivation", 1:5)
+K6 <- K5 %>% group_by(week, cluster) %>% summarise(avg = mean(motivation))
+K6$week <- K6$week %>% as.numeric
+K6$cluster <- K6$cluster %>% as.factor
+ggplot(K6, aes(week, avg, colour = cluster)) + geom_line() + xlab("Week") + ylab("Average Motivation")
+```
+
+
+```{r}
+ K7 <- count(K4, cluster)
+ K7
+```
+### Answer 2
+Clustering the students into 3 groups allows us to see students who have consistent, high motivation. Therefore this is a more efficient way of clustering
+
 ##Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
+
+```{r, cache = T}
+latlong1 <- read.csv("HUDK405020-cluster.csv")
+
+latlong2 <- latlong1 %>% select(lat,long) %>% scale
+
+alg_latlong <- kmeans(latlong2, centers = 2)
+
+alg_latlong$cluster <- ifelse(alg_latlong$cluster == 2, "Americas", "Asia")
+
+data.frame(latlong1,alg_latlong$cluster) %>% ggplot + geom_point(mapping = aes(x = lat, y = long, color = alg_latlong.cluster))
+```
+```{r, cache = T}
+answers1 <- read.csv("HUDK405020-cluster.csv")
+
+answers2 <- answers1 %>% select(-id,-lat,-long) %>% scale
+
+alg_answers <- kmeans(answers2, centers = 3)
+data.frame(answers1,alg_answers$cluster) %>% ggplot(mapping = aes(x = math.accuracy, y = enjoy.discuss, color = as.factor(alg_answers.cluster))) + geom_point() + geom_jitter()
+```
+##Answer 3
+Students who enjoy participating and feel confident in their quantitative ability are in cluster 2, while students who do not feel so confident in participation or their quantitative abilities are in cluster 1. Cluster 3 contains students who do not like to participate much but are confident in their quantitative abilty
+
 
 ##Part III
 
 Create a visualization that shows the overlap between the two clusters each student belongs to in Part II. IE - Are there geographical patterns that correspond to the answers? 
 
 ```{r}
+data.frame(latlong1,alg_latlong$cluster,alg_answers$cluster) %>% ggplot(mapping = aes(x = math.accuracy, y = enjoy.discuss, color = as.factor(alg_answers.cluster), shape = as.factor(alg_latlong.cluster))) + geom_point(size = 3) + geom_jitter(size = 3)
 
+data.frame(latlong1,alg_latlong$cluster,alg_answers$cluster) %>% group_by(alg_latlong.cluster,alg_answers.cluster) %>% count()
 ```
-
+###Answer 4
+There is a pattern between location and answer clusters. A majority of students from Asia seem to lie on the end of higher math accuracy while the math accuracy of americas is split across the board. Also those who have greater math accuracy in Asia also seem to have equal numbers of amongst them unlikely to enjoy discussion.
 
 ## Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
 
