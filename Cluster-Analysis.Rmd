@@ -1,11 +1,11 @@
 ---
-title: "Assignment 4: K Means Clustering"
+title: "K Means Clustering"
 author: "Nicole Schlosberg"
 date: "11/4/2020"
 output: html_document
 ---
 
-In this assignment we will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
+We will be applying the K-means clustering algorithm we looked at in class. At the following link you can find a description of K-means:
 
 https://www.cs.uic.edu/~wilkinson/Applets/cluster.html
 
@@ -20,7 +20,6 @@ library(ggplot2)
 
 ##  Part I
 
-Now, upload the file "Class_Motivation.csv" from the Assignment 4 Repository as a data frame called "K1""
 ```{r}
 K1 <- read.csv("Class_Motivation.csv", header = TRUE)
 ```
@@ -168,6 +167,7 @@ Look at the number of people in each cluster, now repeat this process for 3 rath
 
 The 3 clustered and 2 clustered numbers add up to the same number, which makes sense. It also appears that when you use 3 clusters here, the 2nd and 3rd ones might be composed of the same number (just 1 extra) as the 2nd one in the 2 cluster version. I think that the 3 clusters might be most informative as splitting out that last part shows something different is happening among the groupings.
 
+
 ##  Part II
 
 Using the data collected in the HUDK4050 entrance survey (HUDK4050-cluster.csv) use K-means to cluster the students first according location (lat/long) and then according to their answers to the questions, each student should belong to two clusters.
@@ -220,6 +220,4 @@ DS2 <- DS %>% group_by(questions_cluster,location_cluster) %>% summarize(num = n
 ggplot(DS2, aes(x = questions_cluster, y = location_cluster, size = num)) + geom_point(pch=DS2$location_cluster,color=DS2$questions_cluster) + ggtitle("Clusters") + xlim(0.00, 3.50) + ylim(0.00,2.50)
 ```
 
-
-##  Please render your code as an .html file using knitr and Pull Resquest both your .Rmd file and .html files to the Assignment 3 repository.
 
